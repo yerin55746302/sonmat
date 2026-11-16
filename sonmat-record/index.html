@@ -73,17 +73,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 /* progress panel */
 .count{display:flex;align-items:flex-end;gap:2px;margin-top:30px}
 .count .xl{font-size:clamp(120px,38vw,160px);line-height:.78;letter-spacing:-.06em}
-/* 진행 단계: 여섯 칸 막대 + 지금/다음 */
-.seg{list-style:none;display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
-.seg li{color:var(--muted);font-variant-numeric:tabular-nums}
-.seg li i{display:block;height:6px;background:#e4e2de;margin-bottom:8px;position:relative;overflow:hidden}
-.seg li i b{position:absolute;inset:0;background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
-.seg li.now i b{background:var(--accent)}
-.seg li.now{color:var(--accent)}
-.pg.in .seg li.done i b,.pg.in .seg li.now i b{transform:none}
-.seg li.now i b{animation:segpulse 2.4s ease-in-out 1.2s infinite}
-@keyframes segpulse{50%{opacity:.45}}
-.pg-now{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;margin-top:28px}
+/* 진행 단계: 한 줄 막대 */
+.bar{height:2px;background:#e4e2de;position:relative;overflow:hidden}
+.bar b{position:absolute;inset:0 auto 0 0;width:var(--w,0);background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform 1.4s cubic-bezier(.2,.7,.2,1)}
+.pg.in .bar b{transform:none}
+.pg-now{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;margin-top:24px}
 .pg-now .m{margin-top:4px}
 
 /* bars */
@@ -201,7 +195,7 @@ details>div{padding:0 0 12px;color:var(--muted)}
   <p class="lb">진행 상황 (1)</p>
   <h2 class="l gap-m">가인을 새겨<br>서고에 보관 중이에요.</h2>
   <div class="pg gap-l rv" id="pg">
-    <ol class="seg" id="seg" aria-label="진행 단계"></ol>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="6" id="bar"><b></b></div>
     <div class="pg-now">
       <div><p class="lb">지금</p><p class="m" id="pgNow"></p></div>
       <div><p class="lb">다음</p><p class="m" id="pgNext"></p></div>
@@ -322,7 +316,7 @@ const STEPS=[
   ["대표 균종 산출","2026.09.03"],["가인 새김 · 서고 보관","진행 중"],["기록지 발송","2026.11.28 예정"]];
 const DONE=4;
 document.getElementById("steps").innerHTML=STEPS.map((s,i)=>`<li class="${i<DONE?"":i===DONE?"now":"todo"}"><span>(${i+1}) ${s[0]}</span><span>${s[1]}</span></li>`).join("");
-document.getElementById("seg").innerHTML=STEPS.map((s,i)=>`<li class="${i<DONE?"done":i===DONE?"now":""}" title="${s[0]}"><i><b style="transition-delay:${i*.12}s"></b></i>${i+1}</li>`).join("");
+const bar=document.getElementById("bar");bar.style.setProperty("--w",((DONE+.5)/STEPS.length*100)+"%");bar.setAttribute("aria-valuenow",DONE+1);
 document.getElementById("pgNow").textContent=STEPS[DONE][0];
 document.getElementById("pgNext").innerHTML=`${STEPS[DONE+1][0]}<br><span class="mu">${STEPS[DONE+1][1]}</span>`;
 
