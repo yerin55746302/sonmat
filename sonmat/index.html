@@ -389,7 +389,13 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 .gain .lft .tile img{width:58%;max-height:70%;object-fit:contain}
 .gain .lft .cap{display:flex;justify-content:space-between;margin-top:12px;font-size:var(--t-s);line-height:1.35;font-weight:500}
 .gain .lft .cap span+span{color:var(--muted)}
-.gain .rtt{margin-top:calc(var(--t-l) * -.1)}          /* 결과 제목 글자 윗선 = 왼쪽 가인 상자 윗선 */
+.gain .rtt,.gain .fs>h2{margin-top:calc(var(--t-l) * -.1)}   /* 제목 글자 윗선 = 왼쪽 첫 줄 윗선 */
+/* 테스트 왼쪽: 다섯 질문 목록 (번호 단 + 이름) */
+.gain .tsteps{margin:-3px 0 0;display:grid;row-gap:6px}
+.gain .tsteps li{display:grid;grid-template-columns:2.4em 1fr;opacity:.28}
+.gain .tsteps li em{font-style:normal;color:var(--muted)}
+.gain .tsteps li.done{opacity:.55} .gain .tsteps li.on{opacity:1}
+.gain .tsteps.all li{opacity:1}
 .gain .foot .ghost{padding-left:18px}                   /* '다시 해보기' 시작선 = 버튼 글자 시작선 */
 .gain .tsent{margin:clamp(24px,4vh,44px) 0 0;font-size:var(--t-l);line-height:1.12;letter-spacing:-0.025em;word-break:keep-all;color:#cfccc6}
 .gain .tsent em{font-style:normal;color:#cfccc6;transition:color .5s ease}
@@ -2021,8 +2027,7 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
   const POOL = CATS.map((_, ci) => new Set(MK.filter(m => m[1] === ci).flatMap(m => m[2])));
 
   function steps(){
-    lft.innerHTML = `<div class="k"><span>( 테스트 )</span></div>
-      <ol class="steps">${LBL.map((l, i) => `<li class="${i + 1 === step ? 'on' : i + 1 < step ? 'done' : ''}">(${i + 1}) ${l}</li>`).join('')}</ol>
+    lft.innerHTML = `<ol class="steps tsteps${step ? '' : ' all'}">${LBL.map((l, i) => `<li class="${i + 1 === step ? 'on' : i + 1 < step ? 'done' : ''}"><em>(${i + 1})</em>${l}</li>`).join('')}</ol>
       <div class="snum">${step ? pad(Math.min(step, 5)) + '<small>/05</small>' : ''}</div>`;
   }
   function start(){
