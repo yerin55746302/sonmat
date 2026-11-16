@@ -549,11 +549,11 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 
 <button class="logo" id="logo" aria-label="손맛기록원 소개로"><span>Sonmat<br>Archive®</span></button>
 <nav class="nav" id="nav" aria-label="공간 이동">
+  <button data-v="intro">소개</button>
+  <button data-v="how">원리</button>
   <button data-v="reception">접수실</button>
   <button data-v="archive">서고</button>
   <button data-v="gain">테스트</button>
-  <button data-v="how">원리</button>
-  <button data-v="intro">소개</button>
 </nav>
 
 <!-- ═══ ① 소개 (로딩) ═══ -->
@@ -594,7 +594,7 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 <button class="give rec" id="give">+ 기록 맡기기</button>
 <nav class="cats rec" id="cats" aria-label="식품 종류"></nav>
 <div class="caption rec" id="caption"></div>
-<p class="rhint rec" id="rhint">분석을 기다리는 새 기록들이에요 · 넘겨 보고, 가운데 한 장을 누르면 접수 내용이 펼쳐져요</p>
+<p class="rhint rec" id="rhint">분석을 기다리는 새 기록들입니다 · 넘겨 보고, 가운데 한 장을 누르면 접수 내용이 펼쳐집니다</p>
 <div class="form rec sheet" id="formWrap" hidden role="dialog" aria-modal="true" aria-label="기록 맡기기">
   <div class="in">
     <div class="lft">
@@ -605,8 +605,8 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
     <div class="rgt">
       <form id="giveForm" novalidate>
         <div class="fs" role="group" data-step="1">
-          <h2>어떤 손맛을 맡기시나요</h2>
-          <p class="lead">맡기신 손맛은 방문 수거와 미생물 분석을 거쳐 한 집만의 가인으로 새겨지고, 서고의 서가에 꽂혀요.</p>
+          <h2>어떤 손맛을 맡기시겠습니까</h2>
+          <p class="lead">맡기신 손맛은 방문 수거와 미생물 분석을 거쳐 한 집만의 가인으로 새겨지고, 서고의 서가에 꽂힙니다.</p>
           <div class="sec"><label class="sl" for="fClient">(a) 의뢰인</label><div class="sc"><input id="fClient" autocomplete="name" placeholder="이름"></div></div>
           <div class="sec"><label class="sl" for="fMaker">(b) 최초 제작자</label><div class="sc two">
             <select id="fRel" aria-label="의뢰인과의 관계"><option>어머니</option><option>할머니</option><option>외할머니</option><option>아버지</option><option>이모</option><option>고모</option><option>시어머니</option><option>본인</option></select>
@@ -614,18 +614,18 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
           <div class="sec"><span class="sl">(c) 식품 종류</span><div class="sc ch sw" id="fKinds" role="radiogroup" aria-label="식품 종류"></div></div>
         </div>
         <div class="fs" role="group" data-step="2" hidden>
-          <h2>시료를 받으러 찾아갈게요</h2>
-          <p class="lead">방문 수거와 접수 현황 안내에 필요한 정보예요.</p>
+          <h2>시료를 받으러 찾아가겠습니다</h2>
+          <p class="lead">방문 수거와 접수 현황 안내에 필요한 정보입니다.</p>
           <div class="sec"><label class="sl" for="fName">(a) 이름</label><div class="sc"><input id="fName" autocomplete="name"></div></div>
           <div class="sec"><label class="sl" for="fTel">(b) 연락처</label><div class="sc"><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></div></div>
           <div class="sec"><label class="sl" for="fMail">(c) 이메일</label><div class="sc"><input id="fMail" type="email" autocomplete="email" placeholder="name@example.com"></div></div>
-          <div class="sec"><label class="sl" for="fPw">(d) 비밀번호</label><div class="sc"><input id="fPw" type="password" autocomplete="new-password"><span class="hint">접수 현황을 조회할 때 써요 · 4자 이상</span></div></div>
+          <div class="sec"><label class="sl" for="fPw">(d) 비밀번호</label><div class="sc"><input id="fPw" type="password" autocomplete="new-password"><span class="hint">접수 현황을 조회할 때 씁니다 · 4자 이상</span></div></div>
           <div class="sec"><label class="sl" for="fAddr">(e) 주소</label><div class="sc"><input id="fAddr" autocomplete="street-address" placeholder="서울시 노원구 공릉로 232"></div></div>
           <div class="sec"><label class="sl" for="fDate">(f) 방문 희망일</label><div class="sc"><input id="fDate" type="date"></div></div>
         </div>
         <div class="fs" role="group" data-step="3" hidden>
-          <h2>마지막으로 결제해 주세요</h2>
-          <p class="lead">결제를 마치면 고유번호가 발급되고 접수실에 기록이 올라가요.</p>
+          <h2>마지막으로 결제해 주십시오</h2>
+          <p class="lead">결제를 마치면 고유번호가 발급되고 접수실에 기록이 올라갑니다.</p>
           <div class="sec"><span class="sl">(a) 결제 방식</span><div class="sc ch row" role="radiogroup" aria-label="결제 방식">
             <label><input type="radio" name="pay" value="신용카드" checked><span>신용카드</span></label>
             <label><input type="radio" name="pay" value="계좌이체"><span>계좌이체</span></label>
@@ -634,7 +634,7 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
         </div>
         <p class="err" id="fErr" role="alert"></p>
         <button type="submit" class="cta" id="fNext"><span id="fNextT">다음</span><i>→</i></button>
-        <div class="foot"><button type="button" class="ghost" id="fCancel">닫기</button><span class="note" id="fNote" style="margin:0">시제품 화면이라 실제 결제는 이루어지지 않아요.</span></div>
+        <div class="foot"><button type="button" class="ghost" id="fCancel">닫기</button><span class="note" id="fNote" style="margin:0">시제품 화면이라 실제 결제는 이루어지지 않습니다.</span></div>
       </form>
     </div>
   </div>
@@ -650,15 +650,15 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 <div class="ui help arch off" id="help" role="dialog" aria-label="조작법">
   <div class="hh"><span>( 조작법 )</span></div>
   <ul>
-    <li><em>(1)</em><b>걷기</b><span>바닥을 누르면 걸어가요</span></li>
-    <li><em>(2)</em><b>둘러보기</b><span>누른 채 끌면 둘러봐요</span></li>
-    <li><em>(3)</em><b>다가가기</b><span>서가를 누르면 다가가요</span></li>
+    <li><em>(1)</em><b>걷기</b><span>바닥을 누르면 걸어갑니다</span></li>
+    <li><em>(2)</em><b>둘러보기</b><span>누른 채 끌면 둘러봅니다</span></li>
+    <li><em>(3)</em><b>다가가기</b><span>서가를 누르면 다가갑니다</span></li>
   </ul>
-  <button class="ok" id="helpOk"><span>알겠어요</span><i>→</i></button>
+  <button class="ok" id="helpOk"><span>알겠습니다</span><i>→</i></button>
 </div>
 <button class="ui back arch off" id="leave">← 마당으로</button>
 <div class="ui crumb arch off" id="crumb"></div>
-<p class="ui bhint arch off" id="uHint">책 위로 마우스를 옮기면 돌아서 표지를 보여줘요 · 누르면 꺼내 읽어요</p>
+<p class="ui bhint arch off" id="uHint">책 위로 마우스를 옮기면 돌아서 표지를 보여 줍니다 · 누르면 꺼내 읽습니다</p>
 <div class="ui barrows arch off" id="uArrows"><button id="prevCase" aria-label="이전 서가"><svg viewBox="0 0 26 72"><path d="M22 2 L4 36 L22 70"/></svg></button><button id="nextCase" aria-label="다음 서가"><svg viewBox="0 0 26 72"><path d="M4 2 L22 36 L4 70"/></svg></button></div>
 <aside class="ui hold arch off" id="hold" aria-live="polite"></aside>
 
@@ -686,35 +686,35 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
   <div class="hw">
     <div class="k"><span>( 원리 )</span></div>
     <h2>미생물 넷을 골라<br>한 획씩 겹쳐 새깁니다</h2>
-    <p class="lead">가인은 한 집의 손맛에 사는 미생물을 그린 문양이에요. 어떤 미생물이 사는지가 획의 수를, 그 미생물이 내는 맛이 획의 모양을 정해요.</p>
+    <p class="lead">가인은 한 집의 손맛에 사는 미생물을 그린 문양입니다. 어떤 미생물이 사는지가 획의 수를, 그 미생물이 내는 맛이 획의 모양을 정합니다.</p>
 
     <div class="hs" id="hs1"><span class="sl">(1) 고르기</span><div class="sc">
       <h3>평균보다 두드러진<br>미생물 넷을 고릅니다</h3>
-      <p class="tx">시료에서 읽어 낸 균총을 같은 음식 128가정의 평균과 견줘요. 많이 있는 균이 아니라 평균보다 유난히 많은 균이 그 집의 손맛을 만드니까요. 두드러진 순서대로 넷을 골라요.</p>
+      <p class="tx">시료에서 읽어 낸 균총을 같은 음식 128가정의 평균과 견줍니다. 많이 있는 균이 아니라 평균보다 유난히 많은 균이 그 집의 손맛을 만들기 때문입니다. 두드러진 순서대로 넷을 고릅니다.</p>
       <div class="vis"><ul class="pk" id="hPick"></ul><p class="tx">이름님 김치 · 평균 대비 배수</p></div>
     </div></div>
 
     <div class="hs" id="hs2"><span class="sl">(2) 획의 수</span><div class="sc">
       <h3>획의 수는<br>미생물의 갈래</h3>
-      <p class="tx">세균은 한 획, 유산균은 두 획, 효모는 세 획, 곰팡이는 네 획 이상으로 그려요. 획을 세면 어떤 미생물인지 알 수 있어요.</p>
+      <p class="tx">세균은 한 획, 유산균은 두 획, 효모는 세 획, 곰팡이는 네 획 이상으로 그립니다. 획을 세면 어떤 미생물인지 알 수 있습니다.</p>
       <div class="vis cnt" id="hCount"></div>
     </div></div>
 
     <div class="hs" id="hs3"><span class="sl">(3) 획의 모양</span><div class="sc">
       <h3>획의 모양은<br>미생물이 내는 맛</h3>
-      <p class="tx">같은 갈래라도 미생물이 내는 맛에 따라 획의 모양이 달라요. 맛마다 하나의 기본 모양이 있어요.</p>
+      <p class="tx">같은 갈래라도 미생물이 내는 맛에 따라 획의 모양이 다릅니다. 맛마다 하나의 기본 모양이 있습니다.</p>
       <div class="vis cnt" id="hTaste"></div>
     </div></div>
 
     <div class="hs" id="hs3b"><span class="sl">(4) 획 사전</span><div class="sc">
       <h3>획의 수와 모양이 만나<br>하나의 획이 됩니다</h3>
-      <p class="tx">갈래(획의 수)와 맛(획의 모양)이 만나는 자리마다 쓰는 획이 정해져 있어요. 자리마다 대표 획 하나씩을 모았어요.</p>
-      <div class="vis"><div class="dic" id="hDic"></div><p class="dicx" id="hDicX">획에 마우스를 올리면 어떤 미생물인지 보여요.</p></div>
+      <p class="tx">갈래(획의 수)와 맛(획의 모양)이 만나는 자리마다 쓰는 획이 정해져 있습니다. 자리마다 대표 획 하나씩을 모았습니다.</p>
+      <div class="vis"><div class="dic" id="hDic"></div><p class="dicx" id="hDicX">획에 마우스를 올리면 어떤 미생물인지 보입니다.</p></div>
     </div></div>
 
     <div class="hs" id="hs4"><span class="sl">(5) 겹치기</span><div class="sc">
       <h3>네 획을 겹쳐<br>하나의 문양으로</h3>
-      <p class="tx">고른 미생물 넷의 획을 한 자리에 겹쳐요. 같은 음식이라도 사는 미생물이 다르니, 집마다 다른 가인이 나와요.</p>
+      <p class="tx">고른 미생물 넷의 획을 한 자리에 겹칩니다. 같은 음식이라도 사는 미생물이 다르니, 집마다 다른 가인이 나옵니다.</p>
       <div class="vis"><div class="cmb" id="hCmb"></div></div>
     </div></div>
 
@@ -1116,17 +1116,17 @@ addEventListener('keydown', e => { if (!formWrap.hidden && e.key === 'Escape'){ 
 const fail = (msg, id) => { $('fErr').textContent = msg; $(id).focus(); return false; };
 function checkStep(n){
   if (n === 1){
-    if (!$('fClient').value.trim()) return fail('의뢰인 이름을 적어 주세요.', 'fClient');
-    if ($('fRel').value !== '본인' && !$('fMaker').value.trim()) return fail('최초 제작자 이름을 적어 주세요.', 'fMaker');
+    if (!$('fClient').value.trim()) return fail('의뢰인 이름을 적어 주십시오.', 'fClient');
+    if ($('fRel').value !== '본인' && !$('fMaker').value.trim()) return fail('최초 제작자 이름을 적어 주십시오.', 'fMaker');
     if (!$('fName').value) $('fName').value = $('fClient').value.trim();
   }
   if (n === 2){
-    if (!$('fName').value.trim()) return fail('이름을 적어 주세요.', 'fName');
-    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('fTel').value.trim())) return fail('연락처를 010-0000-0000 형식으로 적어 주세요.', 'fTel');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('fMail').value.trim())) return fail('이메일 주소를 확인해 주세요.', 'fMail');
-    if ($('fPw').value.length < 4) return fail('비밀번호를 4자 이상으로 정해 주세요.', 'fPw');
-    if (!$('fAddr').value.trim()) return fail('방문할 주소를 적어 주세요.', 'fAddr');
-    if (!$('fDate').value || $('fDate').value < minVisit()) return fail('방문 희망일은 오늘부터 이틀 뒤부터 고를 수 있어요.', 'fDate');
+    if (!$('fName').value.trim()) return fail('이름을 적어 주십시오.', 'fName');
+    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('fTel').value.trim())) return fail('연락처를 010-0000-0000 형식으로 적어 주십시오.', 'fTel');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('fMail').value.trim())) return fail('이메일 주소를 확인해 주십시오.', 'fMail');
+    if ($('fPw').value.length < 4) return fail('비밀번호를 4자 이상으로 정해 주십시오.', 'fPw');
+    if (!$('fAddr').value.trim()) return fail('방문할 주소를 적어 주십시오.', 'fAddr');
+    if (!$('fDate').value || $('fDate').value < minVisit()) return fail('방문 희망일은 오늘부터 이틀 뒤부터 고를 수 있습니다.', 'fDate');
   }
   return true;
 }
@@ -1233,7 +1233,7 @@ let enterCase = () => {}, resize = () => {}, holdBook = () => {}, tryPending = (
 
 if (!glOK){
   const n = document.createElement('div'); n.className = 'nogl arch';
-  n.textContent = '이 브라우저에서는 3D 서고를 그릴 수 없어요. 크롬이나 사파리 최신판으로 열어 주세요.';
+  n.textContent = '이 브라우저에서는 3D 서고를 그릴 수 없습니다. 크롬이나 사파리 최신판으로 열어 주십시오.';
   document.body.appendChild(n);
 } else {
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -1657,7 +1657,7 @@ holdBook = bk => {
       <dt>식품 종류</dt><dd>${cat.name}</dd>
       <dt>강한 맛</dt><dd>${strongOf(b).join(' · ')}</dd>
       <dt>고유번호</dt><dd>${b.rec.id}</dd></dl>
-    <div class="ha">${b.sale ? `<button class="act" id="toShop">균주 구매하기</button><span class="price">${won(b.price)}부터</span>` : '<span class="nosale"><b>미판매 균주</b><small>최초 제작자가 균주 판매를 허가하지 않았어요</small></span>'}
+    <div class="ha">${b.sale ? `<button class="act" id="toShop">균주 구매하기</button><span class="price">${won(b.price)}부터</span>` : '<span class="nosale"><b>미판매 균주</b><small>최초 제작자가 균주 판매를 허가하지 않았습니다</small></span>'}
       <span class="pn"><button id="hPrev" aria-label="옆 책">←</button><button id="hNext" aria-label="옆 책">→</button></span></div>`;
   $('hPrev').onclick = e => { e.stopPropagation(); stepHeld(-1); };
   $('hNext').onclick = e => { e.stopPropagation(); stepHeld(1); };
@@ -1859,7 +1859,7 @@ function openShop(b){
     <div class="rgt">
       <form id="shopForm" novalidate>
         <h2 tabindex="-1" style="outline:none">${b.rec.maker}의 ${b.sub}</h2>
-        <p class="lead">${b.rec.years}년 이어 온 ${b.sub}의 균주예요. ${cat.name} 서가 ${b.si+1}칸에 보관 중이며, 냉장으로 보내 드려요.</p>
+        <p class="lead">${b.rec.years}년 이어 온 ${b.sub}의 균주입니다. ${cat.name} 서가 ${b.si+1}칸에 보관 중이며, 냉장으로 보내 드립니다.</p>
         <dl class="facts"><div><dt>갈래</dt><dd>${cat.name} · ${b.sub}</dd></div><div><dt>고유번호</dt><dd>${b.rec.id}</dd></div><div><dt>가인</dt><dd>家印 ${pad(b.art)}</dd></div><div><dt>강한 맛</dt><dd>${strongOf(b).join(' · ')}</dd></div></dl>
         <div class="sec"><span class="sl">(1) 용량</span><div class="sc ch" role="radiogroup" aria-label="용량">${SIZES.map((z, i) => `<label><input type="radio" name="sz" value="${i}" ${i ? '' : 'checked'}><span><span>${z.n}<small>${z.d}</small></span><em>${won(Math.round(b.price*z.k/100)*100)}</em></span></label>`).join('')}</div></div>
         <div class="sec"><span class="sl">(2) 수량</span><div class="sc"><div class="qty"><button type="button" id="qMinus" aria-label="수량 줄이기">−</button><output id="qtyOut">1</output><button type="button" id="qPlus" aria-label="수량 늘리기">+</button></div></div></div>
@@ -1869,7 +1869,7 @@ function openShop(b){
         <div class="sec"><span class="sl">(5) 금액</span><div class="sc"><div class="sum" id="sBill"></div></div></div>
         <p class="err" id="sErr" role="alert"></p>
         <button type="submit" class="cta"><span>결제하기</span><i>→</i></button>
-        <p class="note">시제품 화면이라 실제 결제는 이루어지지 않아요.</p>
+        <p class="note">시제품 화면이라 실제 결제는 이루어지지 않습니다.</p>
       </form>
     </div></div>
     <button class="x" id="shopX" type="button">닫기 ✕</button>`;
@@ -1882,13 +1882,13 @@ function openShop(b){
   $('shopForm').onsubmit = e => {
     e.preventDefault();
     const err = (m, id) => { $('sErr').textContent = m; $(id).focus(); };
-    if (!$('sName').value.trim()) return err('받는 분 이름을 적어 주세요.', 'sName');
-    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('sTel').value.trim())) return err('연락처를 010-0000-0000 형식으로 적어 주세요.', 'sTel');
-    if (!$('sAddr').value.trim()) return err('받을 주소를 적어 주세요.', 'sAddr');
+    if (!$('sName').value.trim()) return err('받는 분 이름을 적어 주십시오.', 'sName');
+    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('sTel').value.trim())) return err('연락처를 010-0000-0000 형식으로 적어 주십시오.', 'sTel');
+    if (!$('sAddr').value.trim()) return err('받을 주소를 적어 주십시오.', 'sAddr');
     const t = shopTotal(), now = new Date(), ord = `OD-${mmdd(now)}-${String(Math.floor(Math.random()*9000) + 1000)}`;
     const pm = shop.querySelector('input[name="sp"]:checked').value, who = $('sName').value.trim();
-    shop.querySelector('.rgt').innerHTML = `<div class="done"><h2>주문이 접수됐어요</h2>
-      <p class="lead">${who}님께 ${b.rec.maker}의 ${b.sub} 균주 ${SIZES[t.si].n}분 ${qty}개를 냉장으로 보내 드릴게요.</p>
+    shop.querySelector('.rgt').innerHTML = `<div class="done"><h2>주문이 접수되었습니다</h2>
+      <p class="lead">${who}님께 ${b.rec.maker}의 ${b.sub} 균주 ${SIZES[t.si].n}분 ${qty}개를 냉장으로 보내 드리겠습니다.</p>
       <dl class="facts"><div><dt>주문번호</dt><dd>${ord}</dd></div><div><dt>결제 방식</dt><dd>${pm}</dd></div><div><dt>균주</dt><dd>${b.rec.id}</dd></div><div><dt>배송</dt><dd>2~3일 안</dd></div></dl>
       <div class="sum"><p class="tt"><span>결제 금액</span><b>${won(t.tot)}</b></p></div>
       <button class="cta" id="doneX" style="margin-top:clamp(30px,6vh,60px)"><span>서고로 돌아가기</span><i>→</i></button></div>`;
@@ -1931,7 +1931,7 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
         <span class="ct">${CATS[b.ci].name} 서가 · ${b.si + 1}칸</span>
         <span class="ts">${strongOf(b).join(' · ')}</span>
         <span class="pr${b.sale ? '' : ' no-sale'}">${b.sale ? won(b.price) + '부터' : '미판매'}</span>
-        <span class="ar">→</span></button></li>`).join('') : '<li class="empty">맞는 기록이 없어요. 조건을 하나씩 풀어 보세요.</li>';
+        <span class="ar">→</span></button></li>`).join('') : '<li class="empty">맞는 기록이 없습니다. 조건을 하나씩 풀어 보십시오.</li>';
     more.hidden = hits.length <= st.limit;
     if (!more.hidden) more.textContent = `더 보기 (${hits.length - st.limit})`;
   }
@@ -1980,20 +1980,20 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
   const short = n => n.replace(/^(\w)\w+ /, '$1. ');
   // 질문 다섯
   const Q = [
-    { t:'무엇을 담그나요?', d:'담그는 것에 따라 그 안에 사는 미생물의 무리가 달라져요.', k:'one',
+    { t:'무엇을 담그십니까?', d:'담그는 것에 따라 그 안에 사는 미생물의 무리가 달라집니다.', k:'one',
       o:CATS.map((c, i) => ({ l:c.name, c:c.c, food:i })) },
-    { t:'어디서 익히나요?', d:'익히는 자리의 온도와 공기가 어떤 미생물이 자랄지 정해요.', k:'one',
+    { t:'어디서 익히십니까?', d:'익히는 자리의 온도와 공기가 어떤 미생물이 자랄지 정합니다.', k:'one',
       o:[ { l:'장독대 항아리', s:'바깥바람 · 햇볕', w:{row:{3:1.6, 0:1.6, 2:.5}} },
           { l:'김치냉장고', s:'낮고 고른 온도', w:{row:{1:2.2}} },
           { l:'부엌 · 베란다', s:'실온', w:{row:{2:2, 1:.5}} },
           { l:'땅에 묻은 독', s:'서늘하고 일정함', w:{row:{1:1.5, 2:1}, taste:{4:1}} } ] },
-    { t:'얼마나 익혀서 먹나요?', d:'오래 익힐수록 천천히 자라는 미생물이 맛을 보태요.', k:'one',
+    { t:'얼마나 익혀서 드십니까?', d:'오래 익힐수록 천천히 자라는 미생물이 맛을 보탭니다.', k:'one',
       o:[ { l:'갓 담가서', s:'며칠 안', w:{taste:{4:1.5}, row:{1:1}} },
           { l:'2~3주', s:'알맞게 익을 때', w:{taste:{0:1.5}} },
           { l:'몇 달', s:'충분히 삭을 때', w:{taste:{3:1}, row:{2:.5}} },
           { l:'해를 넘겨', s:'묵은 맛', w:{taste:{5:1.5, 3:1}, row:{3:1, 0:1}} } ] },
-    { t:'꼭 들어가는 재료가 있나요?', d:'여러 개를 골라도 돼요. 재료에 붙어 들어오는 미생물이 있어요.', k:'many', o:null },   // 보기는 담그는 것에 따라 ING에서
-    { t:'어떤 맛이 먼저 느껴지나요?', d:'두 가지까지 골라 주세요.', k:'two',
+    { t:'꼭 들어가는 재료가 있습니까?', d:'여러 개를 골라도 됩니다. 재료에 붙어 들어오는 미생물이 있습니다.', k:'many', o:null },   // 보기는 담그는 것에 따라 ING에서
+    { t:'어떤 맛이 먼저 느껴집니까?', d:'두 가지까지 골라 주십시오.', k:'two',
       o:TASTE6.map((t, i) => ({ l:t, w:{taste:{[i]:3}} })) }
   ];
   // 넣는 재료: 담그는 것마다 다르게 (그 음식에 사는 미생물로만 연결)
@@ -2029,8 +2029,8 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
     step = 0; ans = []; steps();
     form.innerHTML = `<div class="fs">
       <h2>우리 집 가인 점쳐보기</h2>
-      <p class="lead">다섯 가지 질문에 답하면, 그 손맛에 살고 있을 미생물을 짐작해 어떤 획으로 새겨질지 보여드려요. 1분이면 충분해요.</p>
-      <div class="sec"><span class="sl">이런 가인이 나와요</span><div class="sc"><div class="tprev">${MK.filter((_, i) => i % 3 === 0).map(m => `<img src="gain/g_${m[0]}.png" alt="">`).join('')}</div></div></div>
+      <p class="lead">다섯 가지 질문에 답하면, 그 손맛에 살고 있을 미생물을 짐작해 어떤 획으로 새겨질지 보여 드립니다. 1분이면 충분합니다.</p>
+      <div class="sec"><span class="sl">이런 가인이 나옵니다</span><div class="sc"><div class="tprev">${MK.filter((_, i) => i % 3 === 0).map(m => `<img src="gain/g_${m[0]}.png" alt="">`).join('')}</div></div></div>
       <p class="err" aria-hidden="true"></p>
       <button type="submit" class="cta"><span>시작하기</span><i>→</i></button></div>`;
   }
@@ -2084,8 +2084,8 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
       <div class="cap"><span>家印 ${pad(r.near.i + 1)}</span><span>${CATS[m[1]].name}</span></div>`;
     const cnt = {}; r.strokes.forEach(k => cnt[ST[k][2]] = (cnt[ST[k][2]] || 0) + 1);
     form.innerHTML = `<div class="fs">
-      <h2>家印 ${pad(r.near.i + 1)}에 가까운 손맛이에요</h2>
-      <p class="lead">답해 주신 ${CATS[r.food].name}에서 이런 미생물 네 가지가 보여요. 네 미생물의 획을 겹치면 이 가인이 돼요.</p>
+      <h2>家印 ${pad(r.near.i + 1)}에 가까운 손맛입니다</h2>
+      <p class="lead">답해 주신 ${CATS[r.food].name}에서 이런 미생물 네 가지가 보입니다. 네 미생물의 획을 겹치면 이 가인이 됩니다.</p>
       <div class="sec"><span class="sl">(1) 예상 획</span><div class="sc"><ol class="tst">${r.strokes.map(k => {
           return `<li title="${(r.why[k] || []).map(x => x[0]).filter((x, j, a) => a.indexOf(x) === j).slice(0, 2).join(' · ')}"><img src="gain/s_${k}.png" alt=""><span>${short(ST[k][0])}</span><em>${TASTE6[ST[k][2]]}</em></li>`; }).join('')}</ol></div></div>
       <div class="sec"><span class="sl">(2) 맛의 갈래</span><div class="sc"><div class="ttz">${TASTE6.map((t, i) => `<span class="${cnt[i] ? 'on' : ''}">${t}${cnt[i] ? ' ' + cnt[i] : ''}</span>`).join('')}</div></div></div>
@@ -2103,7 +2103,7 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
     e.preventDefault();
     if (step === 0) return ask(1);
     const v = [...form.querySelectorAll('input[name="q"]:checked')].map(i => +i.value), q = Q[step - 1];
-    if (q.k !== 'many' && !v.length){ $('tErr').textContent = q.k === 'two' ? '맛을 하나 이상 골라 주세요.' : '하나를 골라 주세요.'; return; }
+    if (q.k !== 'many' && !v.length){ $('tErr').textContent = q.k === 'two' ? '맛을 하나 이상 골라 주십시오.' : '하나를 골라 주십시오.'; return; }
     if (step === 1 && ans[0] && ans[0][0] !== v[0]) ans[3] = [];   // 음식을 바꾸면 재료 답은 비움
     ans[step - 1] = v;
     step < 5 ? ask(step + 1) : result();
