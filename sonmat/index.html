@@ -1,0 +1,2208 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>손맛</title>
+<link rel="preload" href="fonts/Pretendard-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+<style>
+/* 글꼴: Pretendard Medium 하나로 통일 (어떤 굵기를 불러도 같은 Medium) */
+@font-face{font-family:"Pretendard";src:url(fonts/Pretendard-Medium.woff2) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+b,strong{font-weight:500}
+/* layout: 흑백 편집 타이포. ① 소개(로딩) = 회색 바탕에 거대한 가인 문양과 흰 글자(CRL식), 아래로 내리면 검은 소개(OFF-BEAT식)
+   ② 접수실 = 새 기록 카드 더미  ③ 서고 = 3D 마당. 책을 꺼내면 오른쪽에 검은 기록면이 열린다 */
+:root{
+  --ink:#0b0b0b; --white:#f3f1ed; --gray:#a3a199; --line:rgba(11,11,11,.16); --muted:#6f6c66; --accent:#E55F22;
+  --rec-bg:#e8e7e3; --rec-hi:#f6f5f2;
+  --f:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  /* 글자 크기: CRL·OFF-BEAT 기준 */
+  --t-giant:clamp(48px,8.2vw,168px);   /* CRL® /V.01 (2026) */
+  --t-head:clamp(32px,4.4vw,84px);     /* We listen first… */
+  --t-lead:clamp(15px,1.36vw,21px);    /* CRL 본문(굵고 촘촘) */
+  --t-nav:clamp(15px,1.3vw,20px);      /* Index Library About */
+  --t-body:clamp(14px,1.05vw,17px);    /* OFF-BEAT 본문 */
+  --t-small:12.5px;
+  /* 글자 크기는 이 네 단계만 씀 */
+  --t-xl:clamp(52px,9.6vw,190px);      /* 가장 큰 제목·숫자 */
+  --t-l:clamp(32px,4.4vw,84px);        /* 제목 */
+  --t-m:clamp(16px,1.3vw,22px);        /* 고르는 글자·입력·버튼 */
+  --t-s:clamp(12px,.9vw,15px);         /* 본문·작은 글자 전부 */
+  /* 12단 그리드: 바깥 여백 m, 단 사이 g, 화면 폭 기준 한 단(+단 사이) cuv */
+  --m:18px; --g:20px; --cuv:calc((100vw - 2*var(--m) + var(--g)) / 12);
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;font-synthesis:none;font-weight:500;overflow:hidden;background:var(--rec-bg);color:var(--ink);font-family:var(--f);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+body[data-view="intro"] .rec,body[data-view="intro"] .arch,body:not([data-view="gain"]) .gain{display:none!important}
+body:not([data-view="how"]) .how{display:none!important}
+body[data-view="how"] .rec,body[data-view="how"] .arch,body[data-view="how"] .intro{display:none!important}
+body[data-view="gain"] .rec,body[data-view="gain"] .arch,body[data-view="gain"] .intro{display:none!important}
+body[data-view="reception"] .arch,body[data-view="reception"] .intro{display:none!important}
+body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!important}
+
+/* 로고와 메뉴: 어떤 바탕 위에서도 읽히게 difference */
+.logo,.nav{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));z-index:50;color:#fff;mix-blend-mode:difference}
+.logo{all:unset;position:fixed;left:18px;top:calc(14px + env(safe-area-inset-top,0px));z-index:50;color:#fff;mix-blend-mode:difference;cursor:pointer;display:flex;align-items:flex-end;gap:12px;line-height:1.35}
+.logo b{font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-0.02em}
+.logo span{font-size:var(--t-s);font-weight:500;letter-spacing:-.02em;line-height:1.35}
+.nav{right:18px;display:flex;gap:clamp(16px,2.4vw,44px);font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em}
+.nav button{all:unset;cursor:pointer;opacity:.6;transition:opacity .25s}
+.nav button:hover{opacity:1}
+.nav button[aria-current="true"]{opacity:1}
+.logo:focus-visible,.nav button:focus-visible{outline:2px solid #fff;outline-offset:4px}
+#veil{position:fixed;inset:0;z-index:60;background:var(--gray);opacity:0;pointer-events:none;transition:opacity .45s ease}
+
+/* ═══ ① 소개 ═══ */
+.intro{position:fixed;inset:0;z-index:40;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:#fff;scroll-behavior:smooth}
+.hero{position:relative;height:100vh;min-height:600px;background:var(--gray);color:#fff;overflow:hidden}
+.giant{position:absolute;right:-12vw;top:54%;height:118vh;width:auto;max-width:none!important;transform:translateY(-50%);pointer-events:none;user-select:none;opacity:.94}
+/* 맨 위 가로선: 불러오는 만큼 흰 선이 차오름 */
+.rule{position:absolute;left:16px;right:16px;top:calc(62px + env(safe-area-inset-top,0px));height:1.5px;background:rgba(255,255,255,.28)}
+.rule i{display:block;height:100%;width:0;background:#fff;transition:width .2s linear}
+.counts{position:absolute;left:16px;top:calc(76px + env(safe-area-inset-top,0px));margin:0;padding:0;list-style:none;font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em}
+.hero .p{position:absolute;top:calc(76px + env(safe-area-inset-top,0px));width:min(290px,22vw);margin:0;font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em;word-break:keep-all}
+.hero .p b{display:block;font-weight:500;margin-bottom:.5em}
+.hero .p1{left:38%} .hero .p2{left:68%}
+/* 제목: 왼쪽 아래에 두 줄로 쌓음 */
+.big{position:absolute;left:12px;bottom:calc(10px + var(--t-xl)*.08);margin:0;font-size:calc(var(--t-xl)*.833);font-weight:500;line-height:1.02;letter-spacing:-0.035em;white-space:nowrap}
+.big span{display:block;margin-left:-.029em}
+.big small{font-size:calc(var(--t-l)*.82);line-height:1.02;letter-spacing:-0.02em;vertical-align:top;margin-left:.25em;position:relative;top:.038em}
+/* 오른쪽 아래: 큰 퍼센트 숫자 */
+.load{position:absolute;left:68%;bottom:10px;text-align:left;font-weight:500;font-variant-numeric:tabular-nums}
+.load #loadNum{display:block;margin-left:-.05em;font-size:var(--t-xl);line-height:1.02;letter-spacing:-0.035em}
+.load #loadNum small{font-size:calc(var(--t-l)*.82);line-height:1.02;letter-spacing:-0.02em;vertical-align:top;position:relative;top:.346em}
+.load .lcap{display:block;margin-bottom:10px;font-size:var(--t-s);line-height:1.35;letter-spacing:-.02em}
+.load button:hover{opacity:.7}
+.load button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.about{background:#fff;color:var(--ink);padding:18vh 4vw 16vh}
+.about h2{margin:0 0 15vh -.032em;max-width:22ch;word-break:keep-all;text-align:left;font-size:var(--t-l);font-weight:500;line-height:1.15;letter-spacing:-0.025em;text-wrap:balance}
+.about-grid{display:grid;grid-template-columns:1fr 2.2fr .9fr 3fr 1.5fr;gap:24px;align-items:start}
+.lab{font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:.02em;white-space:nowrap}
+.tile{margin:0;aspect-ratio:4/5;background:linear-gradient(#d9d7d1,#bdbab2);display:grid;place-items:center;max-width:100%}
+.tile img{width:62%;height:auto}
+.dot{visibility:hidden}
+.txt{min-width:0}
+.txt p{margin:0 0 1.35em;font-size:var(--t-s);font-weight:500;line-height:1.35;text-align:left;word-break:keep-all}
+.side{all:unset;cursor:pointer;font-size:var(--t-m);font-weight:500;letter-spacing:-0.02em;line-height:1.02}
+.side:hover{opacity:.6}
+.side:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.spaces{background:#fff;color:var(--ink);padding:4vh 4vw 6vh}
+.spaces .lab{display:block;margin-bottom:22px}
+.spaces .row{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:5em max-content 1fr;align-items:baseline;gap:24px;
+  padding:22px 0;}
+.spaces .row em{font-style:normal;font-size:var(--t-s);line-height:1.35;opacity:.55;font-variant-numeric:tabular-nums}
+.spaces .row b{font-size:var(--t-l);font-weight:500;letter-spacing:-0.025em;line-height:1.02}
+.spaces .row span{font-size:var(--t-s);line-height:1.35;opacity:.7}
+.spaces .row i{font-style:normal;font-size:var(--t-l);line-height:1.02;transition:transform .3s ease}
+.spaces .row:hover i{transform:translateX(10px)}
+.spaces .row:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.spaces footer{display:flex;justify-content:flex-start;gap:2.4em;margin-top:12vh;font-size:var(--t-s);line-height:1.35;opacity:.6}
+@media (max-width:760px){
+  .hero .p{left:16px;width:calc(100% - 32px)} .hero .p1{top:78px} .hero .p b{display:inline;margin-right:.5em}
+  .hero .p2,.counts{display:none}
+  .giant{right:-30vw;height:90vh}
+  .load{left:16px;bottom:calc(30vw + 18px)}
+  .about-grid{grid-template-columns:1fr} .dot{margin:0;justify-self:start}
+  .spaces .row{grid-template-columns:3em 1fr auto}
+}
+
+/* ═══ ② 접수실 ═══ */
+#rgl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#reception{position:fixed;inset:0;background:var(--rec-bg);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+.glow{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 44% 40% at 50% 52%, rgba(255,248,236,.95), rgba(255,248,236,.35) 45%, rgba(255,248,236,0) 72%),
+    radial-gradient(130% 100% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,54,46,.12))}
+.glow::before{content:"";position:absolute;left:30%;right:30%;top:-12vh;height:110vh;background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.2) 50%,rgba(255,255,255,0) 82%);filter:blur(44px)}
+.card{position:absolute;left:0;top:0;transform-origin:50% 50%;cursor:pointer;box-shadow:-1px 1px 0 rgba(0,0,0,.14), inset -1px 1px 0 rgba(0,0,0,.16)}
+/* 접수 카드: 문양이 아직 없는 종이 카드 (레터프레스 명함처럼) */
+.card{--fs:calc(var(--cw) * .052);background-color:var(--kc);
+  /* 접수 카드 종이: 첨부 리넨 종이 질감(색 + 요철) + 서고처럼 위에서 내려오는 빛 */
+  background-image:linear-gradient(170deg, rgba(255,255,255,.2), rgba(255,255,255,0) 40%, rgba(0,0,0,0) 62%, rgba(40,30,20,.12)), url(tex/linen_relief.jpg), url(tex/linen_albedo.jpg);
+  background-size:100% 100%, cover, cover;background-position:center;background-blend-mode:soft-light, overlay, multiply;
+  color:var(--ki,#1b1916);font-family:var(--f);display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;
+  padding:calc(var(--cw)*.055) calc(var(--cw)*.06) calc(var(--cw)*.05);box-sizing:border-box;overflow:hidden}
+.card .ct{font-size:calc(var(--fs)*1.25);font-weight:500;letter-spacing:-.01em;line-height:1.02;text-shadow:0 1px 0 var(--ks,rgba(255,255,255,.35));white-space:nowrap}
+.card .cb{font-size:var(--fs);font-weight:500;line-height:1.35;letter-spacing:-.005em;text-shadow:0 1px 0 var(--ks,rgba(255,255,255,.35));white-space:nowrap}
+.card .cb span{margin:0 .55em}
+.card .new{position:absolute;right:calc(var(--cw)*.05);top:calc(var(--cw)*.05);font-size:calc(var(--fs)*.8);font-weight:500;line-height:1.35}
+.blob{position:absolute;left:0;top:0;border-radius:50%;pointer-events:none;will-change:transform;background:radial-gradient(closest-side, rgba(20,20,20,.13), rgba(20,20,20,0));filter:blur(6px)}
+.cats{position:fixed;left:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:3000;font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em}
+.cats button{all:unset;display:block;cursor:pointer;opacity:.35;transition:opacity .25s ease}
+.cats button:hover{opacity:.7}
+.cats button[aria-pressed="true"]{opacity:1}
+.cats button:focus-visible{outline:1.5px solid var(--ink);outline-offset:2px}
+.n{font-variant-numeric:tabular-nums}
+.give{all:unset;position:fixed;right:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:3000;cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em}
+.give:hover{opacity:.6}
+.give:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.rhint{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));text-align:center;font-size:var(--t-s);line-height:1.35;color:var(--muted);z-index:2900;pointer-events:none;transition:opacity .3s;margin:0}
+.caption{position:fixed;left:0;top:0;z-index:2500;width:270px;opacity:0;pointer-events:none;transition:opacity .35s ease}
+.caption.on{opacity:1;pointer-events:auto}
+.caption .when{margin:0 0 12px;font-size:var(--t-s);font-weight:500;line-height:1.35}
+.caption dl{display:grid;grid-template-columns:auto 1fr;gap:0 18px;margin:0;font-size:var(--t-s);line-height:1.35}
+.caption dt,.caption dd{margin:0;padding:2px 0}
+.caption dt{color:var(--muted);white-space:nowrap} .caption dd{font-variant-numeric:tabular-nums}
+.caption .state{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:var(--t-s);line-height:1.35;color:var(--muted)}
+.caption .state i{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.caption .state.wait i{background:var(--accent)}
+@media (max-width:640px){ .rhint{display:none} .caption{width:230px} }
+
+/* ═══ ③ 서고 ═══ */
+#gl{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl.drag{cursor:grabbing} #gl.point{cursor:pointer} #gl.browse{cursor:default} #gl.browse.point{cursor:pointer}
+.ui{position:fixed;z-index:3;transition:opacity .6s ease,transform .6s ease}
+.ui.off{opacity:0;pointer-events:none}
+.ui.off *{pointer-events:none!important}
+.helpbtn{right:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.helpbtn button{all:unset;cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em}
+.helpbtn button:hover{opacity:.6}
+.helpbtn button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.jump{left:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em}
+.jump button{all:unset;display:block;cursor:pointer;opacity:.75;transition:opacity .25s ease}
+.jump button:hover{opacity:1}
+.jump button:focus-visible{outline:1.5px solid var(--ink);outline-offset:2px}
+.tip{left:0;top:0;pointer-events:none;padding:6px 10px;background:var(--ink);color:var(--white);font-size:var(--t-s);line-height:1.35;white-space:nowrap;transform:translate(-50%,calc(-100% - 14px));opacity:0;transition:opacity .2s}
+.tip.on{opacity:1}
+.tip b{margin-right:6px;font-weight:500}
+.help{left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;width:min(520px,calc(100vw - 32px));box-sizing:border-box;color:var(--ink);
+  padding:18px 20px 20px;isolation:isolate;
+  /* 젖빛 유리: 뒤의 서고가 흐리게 비치고, 서가 유리와 같은 결이 살짝 얹힘 */
+  background:linear-gradient(160deg,rgba(255,255,255,.62),rgba(255,255,255,.38));
+  -webkit-backdrop-filter:blur(22px) saturate(1.15) brightness(1.06);backdrop-filter:blur(22px) saturate(1.15) brightness(1.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(255,255,255,.28),0 40px 90px -40px rgba(0,0,0,.35)}
+.help::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:url(tex/glass2_rough.jpg) center/420px;opacity:.16;mix-blend-mode:overlay}
+.help .hh{display:flex;justify-content:space-between;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em}
+.help .hh span+span{opacity:.45}
+.help ul{list-style:none;margin:20px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.help li{display:flex;flex-direction:column;min-width:0;text-align:left;word-break:keep-all;overflow-wrap:normal}
+.help li em{font-style:normal;font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.45;font-variant-numeric:tabular-nums}
+.help li b{margin-top:8px;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em}
+.help li span{margin-top:0;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em;opacity:.6}
+.help .ok{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:.5em;margin-top:20px;
+  font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em}
+.help .ok:hover{opacity:.6}
+.help .ok i{font-style:normal;transition:transform .3s ease}
+.help .ok:hover i{transform:translateX(6px)}
+.help .ok:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+@media (max-width:560px){ .help ul{grid-template-columns:1fr;gap:18px} }
+.back{all:unset;position:fixed;z-index:3;left:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;transition:opacity .6s ease}
+.back:hover{opacity:.55}
+.back:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.crumb{left:18px;bottom:calc(48px + env(safe-area-inset-bottom,0px));font-size:var(--t-l);font-weight:500;letter-spacing:-0.035em;line-height:1.02;pointer-events:none}
+.crumb small{display:block;font-size:var(--t-s);line-height:1.35;letter-spacing:-.02em;margin-bottom:.4em;opacity:.6}
+.bhint{left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));text-align:center;font-size:var(--t-s);line-height:1.35;color:var(--muted);pointer-events:none;margin:0}
+.barrows{left:0;right:0;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 max(12px,1.5vw);pointer-events:none}
+.barrows button{all:unset;pointer-events:auto;cursor:pointer;width:44px;height:88px;display:grid;place-items:center;color:var(--ink);transition:transform .25s ease,opacity .3s ease}
+.barrows svg{width:26px;height:72px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+#prevCase:hover{transform:translateX(-4px)} #nextCase:hover{transform:translateX(4px)}
+.barrows button:disabled{opacity:0;pointer-events:none}
+.barrows button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (max-width:700px){ .bhint{display:none} }
+
+/* 책을 꺼냈을 때: CRL 항목처럼 오른쪽에 열리는 검은 기록면 */
+.hold{--hg:clamp(30px,5vh,52px);right:0;top:0;bottom:0;width:min(560px,44vw);box-sizing:border-box;background:#fff;color:var(--ink);z-index:20;box-shadow:-40px 0 80px -40px rgba(0,0,0,.18);
+  padding:calc(78px + env(safe-area-inset-top,0px)) clamp(20px,2.2vw,36px) calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;overflow-y:auto}
+.hold.off{transform:translateX(40px)}
+.hold .hk{display:flex;justify-content:space-between;gap:12px;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em;opacity:.75}
+.hold .hn{margin:2vh 0 0;font-size:var(--t-xl);font-weight:500;letter-spacing:-0.035em;line-height:1.02;font-variant-numeric:tabular-nums}
+.hold h3{margin:3vh 0 0;font-size:var(--t-l);font-weight:500;letter-spacing:-0.025em;line-height:1.02}
+.hold .hm{display:flex;gap:1.2em;margin-top:10px;font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.75}
+.hold .hd{margin:clamp(14px,2.4vh,24px) 0 0;font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em;word-break:keep-all;max-width:30em}
+.hold dl{display:grid;grid-template-columns:auto 1fr;gap:0 22px;margin:var(--hg) 0 0;padding-top:0;font-size:var(--t-s);line-height:1.35}
+.hold dt,.hold dd{margin:0;padding:3px 0}
+.hold dt{opacity:.6;white-space:nowrap} .hold dd{font-variant-numeric:tabular-nums}
+.hold .ha{display:flex;align-items:center;gap:20px;margin-top:auto;padding-top:var(--hg);font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;flex-wrap:wrap}
+.hold .ha button{all:unset;cursor:pointer}
+.hold .ha .act{background:var(--ink);color:#fff;padding:9px 16px}
+.hold .ha .act:hover{opacity:.85}
+.hold .ha .ln{opacity:.75}
+.hold .ha .ln:hover{opacity:.6}
+.hold .ha .pn{margin-left:auto;display:flex;gap:16px}
+.hold .ha button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.hold .nosale{display:flex;flex-direction:column;gap:2px;font-size:var(--t-s);line-height:1.35}
+.hold .nosale b{font-weight:500;font-size:var(--t-s);line-height:1.35}
+.hold .nosale small{opacity:.6}
+.hold .tag{margin-left:10px;opacity:.6;font-size:var(--t-s);line-height:1.35}
+.hold .price{font-size:var(--t-s);line-height:1.35;opacity:.75;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){ .hold{top:auto;width:100%;height:64vh;padding-top:24px} }
+.nogl{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:var(--t-s);line-height:1.35;background:var(--rec-bg)}
+/* ═══ 기록 맡기기 · 균주 구매 · 찾아보기: 같은 편집 시트 (선 없이 크기·투명도로만 위계) ═══ */
+.sheet{position:fixed;inset:0;background:#f1efea;color:var(--ink);overflow-y:auto;overflow-x:hidden;scrollbar-width:none;font-family:var(--f)}
+.sheet .in{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:100%}
+.sheet .lft{position:sticky;top:0;height:100vh;box-sizing:border-box;padding:calc(76px + env(safe-area-inset-top,0px)) 18px 22px;display:flex;flex-direction:column}
+.sheet .rgt{padding:calc(76px + env(safe-area-inset-top,0px)) clamp(18px,3vw,48px) 56px clamp(0px,1vw,18px);box-sizing:border-box;min-width:0}
+.sheet .k{display:flex;justify-content:space-between;gap:12px;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em}
+.sheet .k span+span{opacity:.45;font-variant-numeric:tabular-nums}
+.sheet .x{all:unset;position:fixed;right:18px;top:calc(14px + env(safe-area-inset-top,0px));z-index:3;cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em}
+.sheet .x:hover{opacity:.55}
+.sheet .x:focus-visible,.sheet button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.sheet h2{margin:0;font-size:var(--t-l);font-weight:500;letter-spacing:-0.025em;line-height:1.07;word-break:keep-all}
+.sheet .lead{margin:10px 0 clamp(30px,5vh,56px);font-size:var(--t-s);font-weight:500;line-height:1.35;letter-spacing:-.012em;max-width:28em;word-break:keep-all;opacity:.6}
+.sheet fieldset{border:0;margin:0;padding:0;min-width:0}
+/* 번호 붙은 항목 줄: 왼쪽 작은 번호·이름, 오른쪽 내용 */
+.sec{display:grid;grid-template-columns:minmax(7.5em,24%) minmax(0,1fr);gap:8px 24px;margin:0 0 clamp(24px,4vh,44px)}
+.sec .sl{font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;opacity:.45;padding-top:.5em;white-space:nowrap}
+.sec .sc{min-width:0}
+.sec .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.sec .hint{display:block;margin-top:6px;font-size:var(--t-s);line-height:1.35;opacity:.5}
+.sheet input:not([type=radio]),.sheet select{width:100%;box-sizing:border-box;border:0;border-radius:0;background:rgba(20,18,15,.055);padding:9px 12px;
+  font-family:var(--f);font-size:var(--t-m);font-weight:500;letter-spacing:-.02em;color:var(--ink);-webkit-appearance:none;appearance:none;transition:background .2s,box-shadow .2s}
+.sheet select{padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%230b0b0b' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.sheet input::placeholder{color:var(--ink);opacity:.25}
+.sheet input:not([type=radio]):focus,.sheet select:focus{outline:none;background-color:rgba(20,18,15,.13)}
+/* 고르기: 상자 대신 큰 글자 + 투명도. 고른 줄만 진하게, 앞에 네모 */
+.ch{display:flex;flex-direction:column;gap:6px}
+.ch label{position:relative;cursor:pointer;display:block}
+.ch input{position:absolute;opacity:0;pointer-events:none}
+.ch label>span{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:0 .45em;font-size:var(--t-m);font-weight:500;letter-spacing:-0.02em;line-height:1.02;color:#b4b0a9;transition:color .2s}
+.ch label>span::before{content:none}
+.ch.sw label>span::before{content:"";width:.5em;height:.5em;background:var(--c);align-self:center}
+.ch.sw label>span{grid-template-columns:.9em minmax(0,1fr) auto}
+.ch label:hover>span{color:#6f6c66}
+.ch input:checked+span{color:var(--ink)}
+.ch input:checked+span::before{transform:none}
+.ch input:focus-visible+span{outline:2px solid var(--ink);outline-offset:3px}
+.ch small{margin-left:.6em;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.01em;opacity:.7}
+.ch em{font-style:normal;font-size:var(--t-s);line-height:1.35;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ch.row{flex-direction:row;flex-wrap:wrap;gap:4px 1.1em}
+.ch.row label>span{grid-template-columns:auto}
+.qty{display:inline-flex;align-items:baseline;gap:.5em;font-size:var(--t-m);font-weight:500;letter-spacing:-0.02em;line-height:1.02}
+.qty button{all:unset;cursor:pointer;width:1.1em;text-align:center;opacity:.4}
+.qty button:hover{opacity:1}
+.qty output{min-width:1.4em;text-align:center;font-variant-numeric:tabular-nums}
+/* 금액: 줄 없이, 합계만 아주 크게 */
+.sum{font-size:var(--t-s);font-weight:500;letter-spacing:-.012em;line-height:1.35}
+.sum p{display:flex;justify-content:space-between;gap:24px;margin:0}
+.sum p span:first-child{opacity:.5}
+.sum p span:last-child{font-variant-numeric:tabular-nums}
+.sum .tt{align-items:flex-start;margin-top:clamp(24px,4vh,44px)}
+.sum .tt span:first-child{opacity:1;margin-top:calc(var(--t-l)*.11 - var(--t-s)*.23)}
+.sum .tt b{font-size:var(--t-l);font-weight:500;letter-spacing:-0.035em;line-height:1.02;font-variant-numeric:tabular-nums}
+.cta{all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;align-items:center;gap:20px;background:var(--ink);color:#f3f1ed;
+  padding:clamp(16px,2vh,24px) clamp(18px,1.6vw,26px);font-size:var(--t-m);font-weight:500;letter-spacing:-0.02em;line-height:1.02}
+.cta i{font-style:normal;transition:transform .3s ease}
+.cta:hover i{transform:translateX(8px)}
+.ghost{all:unset;cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;opacity:.5}
+.ghost:hover{opacity:1}
+.sheet .err{color:#a33a12;font-size:var(--t-s);line-height:1.35;font-weight:500;min-height:1.3em;margin:clamp(10px,2vh,24px) 0 10px}
+.sheet .note{font-size:var(--t-s);line-height:1.35;opacity:.45;margin:12px 0 0}
+.sheet .foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+/* 왼쪽 큰 숫자 + 단계 */
+.snum{margin-top:auto;font-size:var(--t-s);font-weight:500;letter-spacing:-.01em;line-height:1.35;font-variant-numeric:tabular-nums;opacity:.45}
+.snum small{font-size:inherit;line-height:inherit;letter-spacing:inherit}
+.sheet input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px #e4e2dd inset;-webkit-text-fill-color:var(--ink)}
+.steps{list-style:none;margin:0 0 clamp(20px,4vh,40px);padding:0;font-size:var(--t-s);font-weight:500;letter-spacing:-.012em;line-height:1.35}
+.steps li{opacity:.25;transition:opacity .3s}
+.steps li.done{opacity:.5} .steps li.on{opacity:1}
+.form{z-index:4000}
+.form .lft .steps{margin-top:clamp(20px,4vh,40px);margin-bottom:0}
+/* 균주 구매 */
+.shop{z-index:4500}
+.shop .stile{flex:1;margin:0;display:grid;place-items:center;min-height:0;position:relative}
+.shop .stile i{position:absolute;inset:0;background:var(--bc)}
+.shop .stile img{position:relative;width:76%;max-height:86%;object-fit:contain}
+.shop .stile.inv img{filter:invert(1) sepia(.3) brightness(.96)}
+.shop .sbig{font-size:var(--t-xl);font-weight:500;letter-spacing:-0.035em;line-height:1.02;font-variant-numeric:tabular-nums}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 20px;margin:0 0 clamp(40px,7vh,72px)}
+.facts div{min-width:0}
+.facts dt{font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.45;margin:0 0 4px}
+.facts dd{margin:0;font-size:var(--t-s);font-weight:500;letter-spacing:-.015em;line-height:1.35;font-variant-numeric:tabular-nums;word-break:keep-all}
+.shop .done .sbig{margin:26px 0 30px}
+@media (max-width:820px){
+  .sheet .in{grid-template-columns:1fr} .sheet .lft{position:relative;height:auto} .sheet .rgt{padding:24px 18px 48px}
+  .form .lft{min-height:0;padding-bottom:0} .form .snum{margin-top:24px}
+  .shop .lft{min-height:54vh} .facts{grid-template-columns:1fr 1fr}
+  .sec{grid-template-columns:1fr;gap:6px} .sec .sl{padding-top:0}
+}
+/* 찾아보기 */
+.find{z-index:4400;padding:calc(76px + env(safe-area-inset-top,0px)) 18px 48px;box-sizing:border-box}
+.find .srch{display:block;margin:clamp(18px,3vh,32px) 0 clamp(26px,4.5vh,44px)}
+.find .srch input{background:none!important;box-shadow:none!important;padding:0 0 10px;border-bottom:1px solid rgba(11,11,11,.14);font-size:var(--t-l);letter-spacing:-0.025em;line-height:1.02;transition:border-color .2s}
+.find .srch input::placeholder{opacity:.13}
+.find .srch input:focus{border-bottom-color:var(--ink)}
+.find .srch input::-webkit-search-cancel-button{-webkit-appearance:none}
+.fil{display:grid;gap:10px;margin-bottom:clamp(30px,6vh,60px)}
+.frow{display:grid;grid-template-columns:minmax(7.5em,16%) minmax(0,1fr);gap:4px 24px;align-items:baseline}
+.frow .sl{font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;opacity:.45;white-space:nowrap}
+.tg{display:flex;flex-wrap:wrap;gap:2px 1.05em}
+.tg button{all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:.32em;font-size:var(--t-m);font-weight:500;letter-spacing:-0.02em;line-height:1.02;opacity:.26;transition:opacity .2s}
+.tg button:hover{opacity:.55}
+.tg button[aria-pressed="true"]{opacity:1}
+.tg button i{width:.42em;height:.42em;align-self:center;background:var(--c)}
+.tg button small{font-size:.5em;letter-spacing:0;font-variant-numeric:tabular-nums;opacity:.7}
+.rhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.rhead b{font-size:var(--t-s);font-weight:500;letter-spacing:-.01em;line-height:1.35;font-variant-numeric:tabular-nums;opacity:.45}
+.rhead span{font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.45}
+.res{list-style:none;margin:0 -8px;padding:0}
+.res button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;align-items:center;gap:0 18px;padding:9px 8px;
+  grid-template-columns:44px 3.4em minmax(0,2.6fr) minmax(0,1.3fr) minmax(0,1.3fr) 8.5em 1em;font-size:var(--t-s);font-weight:500;letter-spacing:-.01em;transition:background .15s}
+.res button:hover,.res button:focus-visible{background:rgba(20,18,15,.06);outline:none}
+.res .sw{width:44px;height:56px;display:grid;place-items:center;background:var(--c)}
+.res .sw img{width:72%;height:auto}
+.res .sw.inv img{filter:invert(1) sepia(.3) brightness(.96)}
+.res .no{opacity:.45;font-variant-numeric:tabular-nums}
+.res .tt{font-size:var(--t-s);line-height:1.35;letter-spacing:-.025em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .tt small{display:block;font-size:var(--t-s);line-height:1.35;letter-spacing:0;opacity:.45;margin-top:2px;font-variant-numeric:tabular-nums}
+.res .ct,.res .ts{opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .pr{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.res .pr.no-sale{opacity:.4}
+.res .ar{text-align:right;opacity:.35}
+.res button:hover .ar{opacity:1}
+.empty{font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.5;margin:24px 0}
+.more{all:unset;cursor:pointer;display:block;margin:26px auto 0;font-size:var(--t-s);line-height:1.35;font-weight:500;opacity:.55}
+.more:hover{opacity:1}
+@media (max-width:820px){
+  .frow{grid-template-columns:1fr} .res button{grid-template-columns:44px minmax(0,1fr) auto} .res .no,.res .ct,.res .ts,.res .ar{display:none}
+}
+.findbtn{right:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));font-size:var(--t-s);line-height:1.35}
+.findbtn button{all:unset;cursor:pointer;font-weight:500;letter-spacing:-.02em}
+.findbtn button:hover{opacity:.6}
+.findbtn button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.helpbtn{right:calc(18px + 5.6em)!important;font-size:var(--t-s);line-height:1.35}
+/* 꺼낸 책: 맛 여섯 갈래 */
+.hold .tz{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:var(--hg)}
+.hold .tz div{opacity:.35;font-size:var(--t-s);line-height:1.35;font-weight:500}
+.hold .tz div.on{opacity:1}
+.hold .tz b{display:block;font-size:var(--t-s);font-weight:500;letter-spacing:-.01em;line-height:1.35;margin-top:0;font-variant-numeric:tabular-nums}
+.intro::-webkit-scrollbar,.sheet::-webkit-scrollbar{display:none}
+/* 균주 구매 · 기록 맡기기: 글자 크기 두 단계만 — 제목(L)과 나머지 전부(S) */
+:is(.shop,.form,.gain) :is(.ch label>span,.ch small,.ch em,.qty,.sum .tt b,.cta,input:not([type=radio]),select){font-size:var(--t-s);line-height:1.35;letter-spacing:-.01em}
+:is(.shop,.form,.gain) .ch small{margin-left:.8em;opacity:.7}
+.shop .qty{gap:.9em}
+:is(.shop,.form,.gain) .cta{padding:15px 18px}
+:is(.shop,.form,.gain) .sec .sl{padding-top:0}
+:is(.shop,.form,.gain) .sec:has(input:not([type=radio]):not([type=checkbox]),select) .sl{padding-top:9px}
+.form .sum .tt span:first-child{margin-top:0}
+.form .sum .tt{align-items:baseline}
+.shop .sum .tt span:first-child{margin-top:0}
+.shop .sum .tt{align-items:baseline}
+.shop.sheet,.form.sheet,.gain.sheet{background:#fff;--t-l:clamp(32px,3.8vw,66px);--t-s:clamp(14px,1.1vw,18px)}   /* 구매·기록 맡기기: 제목은 한 단계 작게, 본문은 한 단계 크게 */
+.find.sheet{background:#f4f3f1}
+/* ═══ 테스트: 우리 집 가인 점쳐보기 ═══ */
+.gain.sheet{z-index:40}
+.gain .ch input{all:unset;position:absolute;opacity:0;pointer-events:none}
+.gain .ch label.off{pointer-events:none;opacity:.35}
+.gain .lft .tile{flex:1;min-height:0;margin:0;background:#f4f3f1;display:grid;place-items:center}
+.gain .lft .tile img{width:58%;max-height:70%;object-fit:contain}
+.gain .lft .cap{display:flex;justify-content:space-between;margin-top:12px;font-size:var(--t-s);line-height:1.35;font-weight:500}
+.gain .lft .cap span+span{color:var(--muted)}
+.gain .tsent{margin:clamp(24px,4vh,44px) 0 0;font-size:var(--t-l);line-height:1.12;letter-spacing:-0.025em;word-break:keep-all;color:#cfccc6}
+.gain .tsent em{font-style:normal;color:#cfccc6;transition:color .5s ease}
+.gain .tsent em.on{color:var(--ink)}
+.gain .tgl{list-style:none;margin:clamp(28px,5vh,56px) 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--g)}
+.gain .tgl li{aspect-ratio:1;background:#f4f3f1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:0;font-size:var(--t-s);line-height:1.35;color:var(--muted)}
+.gain .tgl li img{height:34%;width:auto;opacity:0;transform:scale(.7);transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1.3)}
+.gain .tgl li span{opacity:0;transition:opacity .5s ease .2s;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+.gain .tgl li.on img{opacity:1;transform:none} .gain .tgl li.on span{opacity:1}
+.tprev{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--g)}
+.tq{list-style:none;margin:0;padding:0;font-size:var(--t-s);line-height:1.35;font-weight:500}
+.tq span{display:inline-block;width:2.2em;color:var(--muted)}
+.tprev img{width:100%;aspect-ratio:1;object-fit:contain;background:#f4f3f1;padding:16%;box-sizing:border-box}
+.tst{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--g)}
+.tst li{display:flex;flex-direction:column;align-items:flex-start;min-width:0;font-size:var(--t-s);line-height:1.35;font-weight:500;color:var(--muted)}
+.tst img{height:30px;width:auto;margin-bottom:10px}
+.tst span{color:var(--ink)}
+.tst span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tst em{font-style:normal}
+.ttz{display:flex;flex-wrap:wrap;gap:4px 1.4em;font-size:var(--t-s);line-height:1.35;font-weight:500}
+.ttz span{color:#c4c1bb} .ttz span.on{color:var(--ink)}
+.tfoot{display:flex;gap:1.4em;margin-top:14px}
+@media (max-width:820px){ .gain .lft .tile{min-height:52vh;flex:none} .tst{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:28px} }
+
+/* ═══ 원리: 가인을 새기는 법 ═══ */
+.how.sheet{z-index:40;background:#fff;--t-l:clamp(32px,3.8vw,66px);--t-s:clamp(14px,1.1vw,18px)}
+.hw{padding:calc(76px + env(safe-area-inset-top,0px)) var(--m) calc(64px + env(safe-area-inset-bottom,0px));box-sizing:border-box;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g);font-size:var(--t-s);line-height:1.35;letter-spacing:-.012em}
+.hw .k{grid-column:1/-1}
+.hw>h2{grid-column:1/9;margin-top:clamp(28px,5vh,56px)}
+.hw>.lead{grid-column:1/7;margin-bottom:0}
+.hs{grid-column:1/-1;display:grid;grid-template-columns:subgrid;margin-top:clamp(88px,15vh,170px)}
+.hs>.sl{grid-column:1/3;color:var(--muted)}
+.hs>.sc{grid-column:3/13;min-width:0}
+.hs h3{margin:0;font-size:var(--t-l);font-weight:500;letter-spacing:-0.025em;line-height:1.07;word-break:keep-all}
+.hs .tx{margin:12px 0 0;max-width:34em;color:var(--muted);word-break:keep-all}
+.hs .vis{margin-top:clamp(32px,6vh,64px)}
+.hs .tx i,.hw i{font-style:italic}
+/* (1) 고르기 */
+.pk{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:var(--g)}
+.pk li{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center;padding:10px 0}
+.pk img{grid-column:1/2;height:44px;width:auto;justify-self:start}
+.pk .nm{grid-column:2/6} .pk .ty{grid-column:6/8;color:var(--muted)}
+.pk .br{grid-column:8/11;display:flex;align-items:center;gap:12px}
+.pk .br s{flex:1;height:3px;background:#ebe9e5;position:relative;text-decoration:none}
+.pk .br s b{position:absolute;inset:0 auto 0 0;background:var(--ink);width:0;transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
+.pk .br em{font-style:normal;min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums}
+/* (2) 획의 수 */
+.cnt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--g)}
+.cnt figure{margin:0}
+.cnt .sq{aspect-ratio:1;background:#f4f3f1;display:grid;place-items:center}
+.cnt .sq img{height:44%;width:auto}
+.cnt figcaption{margin-top:12px}
+.cnt figcaption span{display:block;color:var(--muted)}
+/* (3) 획 사전 */
+.dic{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(6,minmax(0,1fr));column-gap:var(--g)}
+.dic .th{color:var(--muted);padding-bottom:14px}
+.dic .rh{color:var(--muted);padding:16px 0;align-self:start}
+.dic .cell{display:flex;flex-wrap:wrap;gap:10px 14px;align-content:flex-start;padding:16px 0;min-height:44px}
+.dic .g{all:unset;cursor:pointer;height:44px;display:block;opacity:.88;transition:opacity .2s,transform .2s}
+.dic .g img{height:100%;width:auto;display:block}
+.dic:hover .g{opacity:.25} .dic .g:hover,.dic .g:focus-visible,.dic .g.on{opacity:1;transform:translateY(-2px)}
+.dic .g:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.dic .rw{display:contents}
+.dic .rw:nth-of-type(odd)>*{background:none}
+.dicx{margin-top:22px;min-height:1.35em}
+.dicx span{color:var(--muted)}
+/* (4) 겹치기 */
+.mpick{display:flex;flex-wrap:wrap;gap:4px 1.1em;margin-bottom:clamp(24px,4vh,40px)}
+.mpick button{all:unset;cursor:pointer;color:#c4c1bb;font-variant-numeric:tabular-nums;transition:color .2s}
+.mpick button:hover{color:var(--muted)} .mpick button[aria-pressed="true"]{color:var(--ink)}
+.mpick button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.mpick .fd{color:var(--muted);margin-left:.6em}
+.mpick .fd:first-child{margin-left:0}
+.cmb{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:var(--g);align-items:stretch}
+.cmb .parts{grid-column:1/5;display:grid;grid-template-columns:1fr 1fr;gap:var(--g);align-content:start}
+.cmb .pt{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.cmb .pt .sq{aspect-ratio:1;background:#f4f3f1;display:grid;place-items:center}
+.cmb .pt img{height:42%;width:auto}
+.cmb .pt p{margin:10px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmb .pt p span{display:block;color:var(--muted)}
+.cmb .eq{grid-column:5/7;display:grid;place-items:center;color:var(--muted)}
+.cmb .out{grid-column:7/11;margin:0;display:flex;flex-direction:column}
+.cmb .out .sq{aspect-ratio:1;background:#f4f3f1;position:relative}
+.cmb .out img{position:absolute;left:15%;top:15%;width:70%;height:70%;object-fit:contain;opacity:0;transform:scale(.96);transition:opacity .8s ease,transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.cmb .out figcaption{display:flex;justify-content:space-between;margin-top:10px}
+.cmb .out figcaption span+span{color:var(--muted)}
+.cmb.on .pt{opacity:1;transform:none}
+.cmb.on .out img{opacity:1;transform:none}
+/* (3) 맛의 모양: 획의 수 칸과 같은 4단, 획 굵기·크기도 같게 */
+.cnt{row-gap:clamp(32px,5vh,52px)}
+.cnt .tsv{width:100%;height:100%;fill:none;stroke:var(--ink);stroke-width:1.75;stroke-linecap:butt}
+.cnt figcaption span{word-break:keep-all}
+.hgo{display:flex;flex-wrap:wrap;gap:12px var(--g);margin-top:clamp(36px,6vh,64px)}
+.hgo .cta{width:auto;flex:1 1 280px}
+.hgo .cta.ln{background:#f4f3f1;color:var(--ink)}
+@media (max-width:820px){
+  .hw{grid-template-columns:1fr} .hw>h2,.hw>.lead,.hs,.hs>.sl,.hs>.sc{grid-column:1/-1}
+  .hs{display:block;margin-top:88px} .hs>.sl{display:block;margin-bottom:10px}
+  .pk{grid-template-columns:44px 1fr auto} .pk li{grid-template-columns:subgrid} .pk img{grid-column:1} .pk .nm{grid-column:2} .pk .ty{display:none} .pk .br{grid-column:1/-1;margin-top:6px}
+  .cnt{grid-template-columns:1fr 1fr;row-gap:24px}
+  .dic{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:6px} .dic .th{display:none} .dic .rh{grid-column:1/-1;padding:18px 0 0}
+  .dic .cell{padding:6px 0} .dic .cell::before{content:attr(data-t);display:block;width:100%;color:var(--muted)}
+  .cmb{grid-template-columns:1fr} .cmb .parts,.cmb .eq,.cmb .out{grid-column:1/-1} .cmb .parts{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .cmb .pt p span{display:none} .cmb .eq{padding:16px 0}
+}
+@media (prefers-reduced-motion: reduce){ .ui,#veil,.intro{transition:none;scroll-behavior:auto} .cmb .pt,.cmb .out img,.pk .br s b{transition:none} }
+
+/* ═══ 12단 그리드에 맞춤 ═══ */
+@media (max-width:760px){ :root{--t-xl:15vw} }
+.logo{left:var(--m)} .nav{right:var(--m)}
+.cats,.jump,.back,.crumb{left:var(--m)} .give,.findbtn{right:var(--m)} .helpbtn{right:calc(var(--m) + 5.6em)!important}
+@media (min-width:761px){
+  .hero{--cu:calc((100% - 2*var(--m) + var(--g)) / 12)}
+  .counts,.big{left:var(--m)}
+  .hero .p{width:calc(var(--cu)*3 - var(--g))}
+  .hero .p1{left:calc(var(--m) + var(--cu)*4)} .hero .p2{left:calc(var(--m) + var(--cu)*8)}
+  .load{left:calc(var(--m) + var(--cu)*8)}
+  .about{padding:18vh var(--m) 16vh}
+  .about h2{max-width:none;width:calc((100% + var(--g)) / 12 * 8 - var(--g))}
+  .about-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--g)}
+  .about-grid .lab{grid-column:1/3} .about-grid .tile{grid-column:3/6} .about-grid .txt{grid-column:7/11}
+  .spaces{padding:4vh var(--m) 6vh}
+  .spaces .lab{display:block}
+  .spaces .row{grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--g)}
+  .spaces .row em{grid-column:1/3} .spaces .row b{grid-column:3/12} .spaces .row i{grid-column:12/13;justify-self:end}
+  .spaces footer{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--g)}
+  .spaces footer span:first-child{grid-column:1/13} .spaces footer span+span{grid-column:3/13}
+  .hold{width:auto;left:calc(var(--m) + var(--cuv)*7 - var(--g));padding-left:var(--g);padding-right:var(--m)}
+  .hold dl{grid-template-columns:repeat(5,minmax(0,1fr));column-gap:var(--g)}
+  .hold dt{grid-column:1/2} .hold dd{grid-column:2/6}
+  .hold .tz{gap:var(--g)}
+}
+@media (min-width:821px){
+  /* 기록 맡기기·균주 구매: 왼쪽 4단, 오른쪽 8단 (항목 이름 2단 + 내용 6단) */
+  .sheet .in{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g);padding:0 var(--m);box-sizing:border-box}
+  .sheet .lft{grid-column:1/5;padding-left:0;padding-right:0}
+  .shop .lft{padding-right:clamp(24px,3vw,48px)}
+  .shop .lead{grid-column:1/-1;white-space:nowrap}
+  .sheet .rgt{grid-column:5/13;padding-left:0;padding-right:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));column-gap:var(--g);align-content:start}
+  .sheet .rgt>form,.sheet .rgt>.done,.sheet form>.fs:not([hidden]){grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-content:start}
+  .sheet h2{grid-column:1/8} .sheet .lead{grid-column:1/7;max-width:none}
+  .sec{grid-column:1/-1;grid-template-columns:subgrid;column-gap:var(--g)} .sec .sl{grid-column:1/3} .sec .sc{grid-column:3/9}
+  .sec .two{gap:var(--g)}
+  .facts{grid-column:1/-1;grid-template-columns:subgrid;column-gap:var(--g)} .facts>div{grid-column:span 2}
+  .sheet .err,.sheet .cta,.sheet .foot,.sheet .note{grid-column:3/-1}
+  .sheet .done>.sum{grid-column:1/-1}
+  /* 찾아보기: 항목 이름 2단 + 내용 10단, 목록도 같은 단 */
+  .find{padding-left:var(--m);padding-right:var(--m)}
+  .frow{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g)} .frow .sl{grid-column:1/3} .frow .tg{grid-column:3/13}
+  .rhead{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g)} .rhead b{grid-column:1/3} .rhead span{grid-column:3/13}
+  .res{margin:0}
+  .res button{position:relative;isolation:isolate;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--g);padding:8px 0}
+  .res button::before{content:"";position:absolute;inset:0 calc(var(--m)*-1);background:rgba(20,18,15,.06);opacity:0;transition:opacity .15s;z-index:-1}
+  .res button:hover,.res button:focus-visible{background:none}
+  .res button:hover::before,.res button:focus-visible::before{opacity:1}
+  .res .sw{grid-column:1/2} .res .no{grid-column:2/3} .res .tt{grid-column:3/7} .res .ct{grid-column:7/9} .res .ts{grid-column:9/11} .res .pr{grid-column:11/12} .res .ar{grid-column:12/13}
+  .more{margin:26px 0 0 calc((100% + var(--g)) / 12 * 2)}
+}
+</style>
+
+<button class="logo" id="logo" aria-label="손맛기록원 소개로"><span>Sonmat<br>Archive®</span></button>
+<nav class="nav" id="nav" aria-label="공간 이동">
+  <button data-v="reception">접수실</button>
+  <button data-v="archive">서고</button>
+  <button data-v="gain">테스트</button>
+  <button data-v="how">원리</button>
+  <button data-v="intro">소개</button>
+</nav>
+
+<!-- ═══ ① 소개 (로딩) ═══ -->
+<section class="intro" id="intro" aria-label="손맛기록원 소개">
+  <div class="hero">
+    <img class="giant" id="giant" src="art/01.png" alt="">
+    <p class="p p1"><b>(1)</b>손맛기록원은 한 집에서 대를 이어 온 발효의 맛을 미생물 단위로 기록하는 아카이브입니다. 김치, 간장, 된장, 고추장, 막걸리 다섯 갈래의 손맛을 분석하고, 그 결과를 가인(家印)이라는 하나의 문양으로 새겨 남깁니다. 같은 재료로 담가도 집마다 맛이 다른 까닭은 그 집에 사는 미생물이 다르기 때문입니다.</p>
+    <h1 class="big" aria-label="손맛기록원: 한 집의 맛, 손맛"><span>한 집의 맛</span><span>손맛<small>(Sonmat)</small></span></h1>
+    <ul class="counts" id="introCounts"></ul>
+    <p class="p p2"><b>(2)</b>기록은 접수실에서 시작됩니다. 고유번호를 받은 손맛은 분석을 거쳐 서고의 다섯 서가에 꽂히고, 누구든 다시 꺼내 읽을 수 있습니다. 가인의 획 수는 미생물의 유형을, 문양의 모양은 맛의 갈래를 뜻합니다.</p>
+    <div class="load"><span id="loadNum" aria-label="서고에 꽂힌 기록 수">0000<small>권</small></span></div>
+  </div>
+  <div class="about">
+    <h2>한 집안의 손맛을 듣고<br>문양으로 남깁니다</h2>
+    <div class="about-grid">
+      <span class="lab">ABOUT</span>
+      <figure class="tile"><img src="art/05.png" alt="가인 문양 예시"></figure>
+      <div class="txt">
+        <p>손맛기록원은 집집마다 대를 이어 온 발효의 맛을 기록하는 아카이브입니다. 같은 배추, 같은 콩으로 담가도 집마다 맛이 다른 까닭은 그 집의 항아리와 손에 사는 미생물이 다르기 때문입니다. 손맛기록원은 의뢰받은 김치, 간장, 된장, 고추장, 막걸리의 미생물 구성을 분석하고, 그 결과를 가인(家印)이라는 하나의 문양으로 새깁니다. 새겨진 기록은 고유번호와 함께 서고에 보관되어, 언제든 다시 꺼내 읽을 수 있습니다.</p>
+        <p>Sonmat Archive records the fermented flavours that families pass down. Two homes can use the same cabbage and the same beans and still taste different, because different microbes live in each home. We analyse the microbial make-up of every kimchi, soy sauce, doenjang, gochujang and makgeolli we receive, and carve the result into a single mark called Gain (家印). Each mark is filed in the archive under its own number, ready to be read again.</p>
+      </div>
+    </div>
+  </div>
+  <div class="spaces">
+    <span class="lab">SPACES</span>
+    <button class="row" data-go="reception"><em>(1)</em><b>접수실</b><i>→</i></button>
+    <button class="row" data-go="archive"><em>(2)</em><b>서고</b><i>→</i></button>
+    <footer><span>© 2026 손맛 Sonmat Archive · 한 집의 맛을 기록합니다</span></footer>
+  </div>
+</section>
+
+<!-- ═══ ② 접수실 ═══ -->
+<section id="reception" class="rec" aria-label="접수실: 새로 들어온 기록">
+  <div class="glow"></div>
+  <canvas id="rgl" aria-hidden="true"></canvas>
+  <div id="stage"></div>
+</section>
+<button class="give rec" id="give">+ 기록 맡기기</button>
+<nav class="cats rec" id="cats" aria-label="식품 종류"></nav>
+<div class="caption rec" id="caption"></div>
+<p class="rhint rec" id="rhint">분석을 기다리는 새 기록들이에요 · 넘겨 보고, 가운데 한 장을 누르면 접수 내용이 펼쳐져요</p>
+<div class="form rec sheet" id="formWrap" hidden role="dialog" aria-modal="true" aria-label="기록 맡기기">
+  <div class="in">
+    <div class="lft">
+      <div class="k"><span>( 기록 맡기기 )</span></div>
+      <ol class="steps" id="fProg"><li class="on">(1) 기록 정보</li><li>(2) 의뢰인 정보</li><li>(3) 결제</li></ol>
+      <div class="snum" id="fNum">01<small>/03</small></div>
+    </div>
+    <div class="rgt">
+      <form id="giveForm" novalidate>
+        <div class="fs" role="group" data-step="1">
+          <h2>어떤 손맛을 맡기시나요</h2>
+          <p class="lead">맡기신 손맛은 방문 수거와 미생물 분석을 거쳐 한 집만의 가인으로 새겨지고, 서고의 서가에 꽂혀요.</p>
+          <div class="sec"><label class="sl" for="fClient">(a) 의뢰인</label><div class="sc"><input id="fClient" autocomplete="name" placeholder="이름"></div></div>
+          <div class="sec"><label class="sl" for="fMaker">(b) 최초 제작자</label><div class="sc two">
+            <select id="fRel" aria-label="의뢰인과의 관계"><option>어머니</option><option>할머니</option><option>외할머니</option><option>아버지</option><option>이모</option><option>고모</option><option>시어머니</option><option>본인</option></select>
+            <input id="fMaker" placeholder="이름"></div></div>
+          <div class="sec"><span class="sl">(c) 식품 종류</span><div class="sc ch sw" id="fKinds" role="radiogroup" aria-label="식품 종류"></div></div>
+        </div>
+        <div class="fs" role="group" data-step="2" hidden>
+          <h2>시료를 받으러 찾아갈게요</h2>
+          <p class="lead">방문 수거와 접수 현황 안내에 필요한 정보예요.</p>
+          <div class="sec"><label class="sl" for="fName">(a) 이름</label><div class="sc"><input id="fName" autocomplete="name"></div></div>
+          <div class="sec"><label class="sl" for="fTel">(b) 연락처</label><div class="sc"><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></div></div>
+          <div class="sec"><label class="sl" for="fMail">(c) 이메일</label><div class="sc"><input id="fMail" type="email" autocomplete="email" placeholder="name@example.com"></div></div>
+          <div class="sec"><label class="sl" for="fPw">(d) 비밀번호</label><div class="sc"><input id="fPw" type="password" autocomplete="new-password"><span class="hint">접수 현황을 조회할 때 써요 · 4자 이상</span></div></div>
+          <div class="sec"><label class="sl" for="fAddr">(e) 주소</label><div class="sc"><input id="fAddr" autocomplete="street-address" placeholder="서울시 노원구 공릉로 232"></div></div>
+          <div class="sec"><label class="sl" for="fDate">(f) 방문 희망일</label><div class="sc"><input id="fDate" type="date"></div></div>
+        </div>
+        <div class="fs" role="group" data-step="3" hidden>
+          <h2>마지막으로 결제해 주세요</h2>
+          <p class="lead">결제를 마치면 고유번호가 발급되고 접수실에 기록이 올라가요.</p>
+          <div class="sec"><span class="sl">(a) 결제 방식</span><div class="sc ch row" role="radiogroup" aria-label="결제 방식">
+            <label><input type="radio" name="pay" value="신용카드" checked><span>신용카드</span></label>
+            <label><input type="radio" name="pay" value="계좌이체"><span>계좌이체</span></label>
+            <label><input type="radio" name="pay" value="간편결제"><span>간편결제</span></label></div></div>
+          <div class="sec"><span class="sl">(b) 금액</span><div class="sc"><div class="sum" id="fBill"></div></div></div>
+        </div>
+        <p class="err" id="fErr" role="alert"></p>
+        <button type="submit" class="cta" id="fNext"><span id="fNextT">다음</span><i>→</i></button>
+        <div class="foot"><button type="button" class="ghost" id="fCancel">닫기</button><span class="note" id="fNote" style="margin:0">시제품 화면이라 실제 결제는 이루어지지 않아요.</span></div>
+      </form>
+    </div>
+  </div>
+  <button class="x" id="fX" type="button">닫기 ✕</button>
+</div>
+
+<!-- ═══ ③ 서고 ═══ -->
+<canvas id="gl" class="arch" aria-label="창호지 벽으로 둘러싼 서고 마당. 끌어서 둘러보고, 바닥을 눌러 걷고, 서가를 눌러 다가갑니다."></canvas>
+<div class="ui helpbtn arch" id="uHelpBtn"><button id="helpBtn">( 조작법 )</button></div>
+<div class="ui findbtn arch" id="uFind"><button id="findBtn">찾아보기</button></div>
+<nav class="ui jump arch" id="uJump" aria-label="서가로 바로 가기"></nav>
+<div class="ui tip arch" id="tip"></div>
+<div class="ui help arch off" id="help" role="dialog" aria-label="조작법">
+  <div class="hh"><span>( 조작법 )</span></div>
+  <ul>
+    <li><em>(1)</em><b>걷기</b><span>바닥을 누르면 걸어가요</span></li>
+    <li><em>(2)</em><b>둘러보기</b><span>누른 채 끌면 둘러봐요</span></li>
+    <li><em>(3)</em><b>다가가기</b><span>서가를 누르면 다가가요</span></li>
+  </ul>
+  <button class="ok" id="helpOk"><span>알겠어요</span><i>→</i></button>
+</div>
+<button class="ui back arch off" id="leave">← 마당으로</button>
+<div class="ui crumb arch off" id="crumb"></div>
+<p class="ui bhint arch off" id="uHint">책 위로 마우스를 옮기면 돌아서 표지를 보여줘요 · 누르면 꺼내 읽어요</p>
+<div class="ui barrows arch off" id="uArrows"><button id="prevCase" aria-label="이전 서가"><svg viewBox="0 0 26 72"><path d="M22 2 L4 36 L22 70"/></svg></button><button id="nextCase" aria-label="다음 서가"><svg viewBox="0 0 26 72"><path d="M4 2 L22 36 L4 70"/></svg></button></div>
+<aside class="ui hold arch off" id="hold" aria-live="polite"></aside>
+
+<section class="shop sheet" id="shop" hidden aria-label="균주 구매"></section>
+<section class="gain sheet" id="gain" aria-label="우리 집 가인 점쳐보기">
+  <div class="in">
+    <div class="lft" id="tLft"></div>
+    <div class="rgt"><form id="tForm" novalidate></form></div>
+  </div>
+</section>
+<section class="find arch sheet" id="find" hidden role="dialog" aria-modal="true" aria-label="기록 찾아보기">
+  <div class="k"><span>( 찾아보기 )</span><span>서고 · 분석을 마친 기록</span></div>
+  <label class="srch"><input id="fdQ" type="search" placeholder="제작자, 음식, 고유번호로 찾기" autocomplete="off" aria-label="검색어"></label>
+  <div class="fil">
+    <div class="frow"><span class="sl">(1) 갈래</span><div class="tg" id="fdCat"></div></div>
+    <div class="frow"><span class="sl">(2) 강한 맛</span><div class="tg" id="fdTaste"></div></div>
+    <div class="frow"><span class="sl">(3) 균주</span><div class="tg" id="fdSale"></div></div>
+  </div>
+  <div class="rhead"><b id="fdCount">000</b><span id="fdSum"></span></div>
+  <ol class="res" id="fdRes"></ol>
+  <button class="more" id="fdMore" hidden>더 보기</button>
+  <button class="x" id="fdX" type="button">닫기 ✕</button>
+</section>
+<section class="how sheet" id="how" aria-label="가인을 새기는 원리">
+  <div class="hw">
+    <div class="k"><span>( 원리 )</span></div>
+    <h2>미생물 넷을 골라<br>한 획씩 겹쳐 새깁니다</h2>
+    <p class="lead">가인은 한 집의 손맛에 사는 미생물을 그린 문양이에요. 어떤 미생물이 사는지가 획의 수를, 그 미생물이 내는 맛이 획의 모양을 정해요.</p>
+
+    <div class="hs" id="hs1"><span class="sl">(1) 고르기</span><div class="sc">
+      <h3>평균보다 두드러진<br>미생물 넷을 고릅니다</h3>
+      <p class="tx">시료에서 읽어 낸 균총을 같은 음식 128가정의 평균과 견줘요. 많이 있는 균이 아니라 평균보다 유난히 많은 균이 그 집의 손맛을 만드니까요. 두드러진 순서대로 넷을 골라요.</p>
+      <div class="vis"><ul class="pk" id="hPick"></ul><p class="tx">이름님 김치 · 평균 대비 배수</p></div>
+    </div></div>
+
+    <div class="hs" id="hs2"><span class="sl">(2) 획의 수</span><div class="sc">
+      <h3>획의 수는<br>미생물의 갈래</h3>
+      <p class="tx">세균은 한 획, 유산균은 두 획, 효모는 세 획, 곰팡이는 네 획 이상으로 그려요. 획을 세면 어떤 미생물인지 알 수 있어요.</p>
+      <div class="vis cnt" id="hCount"></div>
+    </div></div>
+
+    <div class="hs" id="hs3"><span class="sl">(3) 획의 모양</span><div class="sc">
+      <h3>획의 모양은<br>미생물이 내는 맛</h3>
+      <p class="tx">같은 갈래라도 미생물이 내는 맛에 따라 획의 모양이 달라요. 맛마다 하나의 기본 모양이 있어요.</p>
+      <div class="vis cnt" id="hTaste"></div>
+    </div></div>
+
+    <div class="hs" id="hs3b"><span class="sl">(4) 획 사전</span><div class="sc">
+      <h3>획의 수와 모양이 만나<br>하나의 획이 됩니다</h3>
+      <p class="tx">갈래(획의 수)와 맛(획의 모양)이 만나는 자리마다 쓰는 획이 정해져 있어요. 자리마다 대표 획 하나씩을 모았어요.</p>
+      <div class="vis"><div class="dic" id="hDic"></div><p class="dicx" id="hDicX">획에 마우스를 올리면 어떤 미생물인지 보여요.</p></div>
+    </div></div>
+
+    <div class="hs" id="hs4"><span class="sl">(5) 겹치기</span><div class="sc">
+      <h3>네 획을 겹쳐<br>하나의 문양으로</h3>
+      <p class="tx">고른 미생물 넷의 획을 한 자리에 겹쳐요. 같은 음식이라도 사는 미생물이 다르니, 집마다 다른 가인이 나와요.</p>
+      <div class="vis"><div class="cmb" id="hCmb"></div></div>
+    </div></div>
+
+  </div>
+</section>
+<div id="veil"></div>
+
+<script>
+/* ════════════════ 공통 데이터: 다섯 갈래 × 네 칸, 책 한 권 = 한 집의 기록 ════════════════ */
+const CATS = [
+  {name:"김치",   en:"Kimchi",    c:"#E55F22", subs:["배추김치","깍두기","동치미","갓김치"]},
+  {name:"간장",   en:"Ganjang",   c:"#5C3B19", subs:["조선간장","양조간장","어간장","맛간장"]},
+  {name:"된장",   en:"Doenjang",  c:"#C7A75F", subs:["재래된장","청국장","막장","쌈장"]},
+  {name:"고추장", en:"Gochujang", c:"#BD400B", subs:["찹쌀고추장","보리고추장","매실고추장","약고추장"]},
+  {name:"막걸리", en:"Makgeolli", c:"#F8F2DA", subs:["생막걸리","동동주","이화주","탁주"]}
+];
+const SHELF_PX = 760;
+let seed = 19;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const hexToRgb = h => { const n = parseInt(h.slice(1),16); return [n>>16, n>>8&255, n&255]; };
+const lum = h => { const [r,g,b] = hexToRgb(h); return .299*r + .587*g + .114*b; };
+function mix(h, t){ const T = t > 0 ? 255 : 0, k = Math.abs(t); return '#' + hexToRgb(h).map(v => Math.round(v + (T - v)*k).toString(16).padStart(2,'0')).join(''); }
+function pick(list){ const tot = list.reduce((a,x)=>a+x[1],0); let r = rnd()*tot; for (const [v,w] of list){ r -= w; if (r < 0) return v; } return list[0][0]; }
+
+/* 서가별 색 범위 (색상 h, 채도 s, 밝기 l). 김치·고추장은 색상이 가까워 밝기로 확실히 나눔 */
+const SHADE = {
+  "김치":   {h:[16,28], s:[.55,.92], l:[.44,.74]},   // 연주황 ~ 주황 (갈색·짙은 적색 제외)
+  "고추장": {h:[10,22], s:[.68,.96], l:[.20,.42]},   // 짙은 다홍 ~ 고추색
+  "간장":   {h:[20,36], s:[.25,.62], l:[.08,.34]},   // 먹빛 갈색 ~ 밤색
+  "된장":   {h:[34,50], s:[.28,.62], l:[.42,.76]},   // 황토 ~ 누런 베이지
+  "막걸리": {h:[38,56], s:[.15,.72], l:[.84,.97]}    // 쌀뜨물 흰색 ~ 크림
+};
+// 어느 서가의 색 범위에도 들지 않는 회색 (모든 서가에 조금씩)
+const GRAYS = ["#8C8A86","#A9A6A0","#6F6D69","#C2C0BB","#5A5957"];
+function hslHex(h, s, l){
+  const f = n => { const k = (n + h/30) % 12, a = s*Math.min(l, 1 - l); return Math.round(255*(l - a*Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+CATS.forEach((cat, ci) => {
+  // 책 색은 그 서가 색 안에서만: 밝기·채도만 정해진 폭 안에서 흔듦 (다른 서가 색 범위와 겹치지 않게)
+  const R = SHADE[cat.name];
+  const shade = () => hslHex(R.h[0] + rnd()*(R.h[1] - R.h[0]), R.s[0] + rnd()*(R.s[1] - R.s[0]), R.l[0] + rnd()*(R.l[1] - R.l[0]));
+  let no = 0;
+  cat.shelves = cat.subs.map((sub, si) => {
+    const books = []; let sum = 0;
+    while (sum < SHELF_PX){
+      const r = rnd();
+      const w = r < .66 ? 6 + rnd()*11 : r < .93 ? 17 + rnd()*14 : 31 + rnd()*16;
+      const r2 = rnd();
+      const h = r2 < .12 ? .5 + rnd()*.15 : r2 < .22 ? .95 + rnd()*.05 : .68 + rnd()*.27;
+      const rr = rnd(), color = rr < .25 ? cat.c : rr < .9 ? shade() : GRAYS[Math.floor(rnd()*GRAYS.length)], L = lum(color);
+      books.push({ ci, si, sub, color, w, h, art: 1 + Math.floor(rnd()*10), text: w >= 15 && rnd() < .65, mark: w >= 13 && rnd() < .42, inv: L < 50, no: 0 });
+      sum += w + 1;
+    }
+    books.forEach((b, i) => { b.no = ++no; b.bi = i; });
+    return { sub, books, sum };
+  });
+  cat.count = no;
+});
+
+/* 기록 내용 (지금은 임의 값): 의뢰인 · 최초 제작자 · 접수 일시 · 고유번호 */
+const ALL = [];
+CATS.forEach(cat => cat.shelves.forEach(s => s.books.forEach(b => ALL.push(b))));
+// 이름: 성 46개 × 세대별 이름 (제작자는 관계에 맞는 세대에서, 의뢰인은 젊은·중년 세대에서)
+const FAM = ["김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권","황","안","송","류","홍","전","고","문","양","손","배","백","허","유","남","심","노","하","곽","성","차","주","우","구","민","진","나","지","엄","채","원"];
+const GIVEN_OLD = ["순자","영자","말순","옥순","복례","점례","분이","정순","춘자","옥분","귀례","간난","금순","봉순","순덕","막례","향순","덕순","길자","순례","춘옥","순이","영순","정례","금례","외순","옥자","을순","복순","갑순","기순","판례","선녀"];
+const GIVEN_OLD_M = ["만석","상철","춘식","병수","덕배","만수","용팔","판석","길수","동팔","봉구","종태","칠성","갑수","영길","석구","춘배","호식"];
+const GIVEN_MID = ["미경","정희","경자","영숙","은주","현숙","혜경","미숙","선희","명숙","경희","순영","정미","은숙","영미","미영","혜숙","경숙","인숙","숙희","옥희","정자","명자","현주","미정","성희","지숙","연희","향숙","희정"];
+const GIVEN_MID_M = ["재훈","성호","정훈","영철","동수","상우","기현","병철","태식","준호","정수","광호","진우","대현","승철","형준","창민","석진"];
+const GIVEN_YOUNG = ["민솔","서연","지호","하은","도윤","수아","예린","시언","소율","은비","다인","지민","유진","서윤","하준","예준","지우","수빈","채원","다은","윤서","가은","소윤","시우","주원","하린","나연","도현","건우","지안","서아","이준","예나","태윤","라희","온유","새봄","하늘","보람","슬기"];
+const GIVEN = [...GIVEN_YOUNG, ...GIVEN_MID];   // (GIVEN_MID_M은 아래에서 합침)
+GIVEN.push(...GIVEN_MID_M);
+const OLD_REL = ["할머니","외할머니","할아버지","시어머니","큰어머니"];
+const makerName = (rel, pick) => pick(FAM) + pick(rel === "할아버지" ? GIVEN_OLD_M : rel === "아버지" ? GIVEN_MID_M : OLD_REL.includes(rel) ? GIVEN_OLD : rel === "본인" ? GIVEN : GIVEN_MID);
+const REL = ["어머니","할머니","외할머니","아버지","이모","고모","큰어머니","시어머니","할아버지","본인"];
+{
+  let s2 = 41;
+  const r2 = () => (s2 = (s2 * 16807) % 2147483647) / 2147483647;
+  const pickR = a => a[Math.floor(r2()*a.length)];
+  ALL.forEach(b => {
+    const client = pickR(FAM) + pickR(GIVEN), rel = pickR(REL);
+    const maker = rel === "본인" ? `본인 ${client}` : `${rel} ${makerName(rel, pickR)}`;
+    const day = 1 + Math.floor(r2()*284), mins = 9*60 + Math.floor(r2()*9*60);
+    b.rec = { client, maker, at:new Date(2026, 0, day, Math.floor(mins/60), mins % 60), state:'보관', years: 3 + Math.floor(r2()*58) };
+  });
+}
+const pad = (n, k = 2) => String(n).padStart(k, '0');
+const mmdd = d => pad(d.getMonth()+1) + pad(d.getDate());
+const fmtAt = d => `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const daySeq = {};
+[...ALL].sort((a, b) => a.rec.at - b.rec.at).forEach(b => {   // 고유번호: SM-연도-월일-그날 접수 순번
+  const k = mmdd(b.rec.at); daySeq[k] = (daySeq[k] || 0) + 1;
+  b.rec.id = `SM-26-${k}-${pad(daySeq[k], 3)}`;
+});
+// 기록 설명문
+const hasBatchim = w => { const c = w.charCodeAt(w.length - 1) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 !== 0; };
+const josa = (w, a, b) => w + (hasBatchim(w) ? a : b);
+function describe(b){
+  const cat = CATS[b.ci], d = b.rec.at;
+  return `${josa(b.rec.maker, '이', '가')} ${b.rec.years}년째 담가 온 ${b.sub}입니다. ${josa(b.rec.client, '이', '가')} ${d.getMonth()+1}월 ${d.getDate()}일 접수실에 맡긴 뒤, 미생물 분석을 거쳐 가인 ${pad(b.art)}번 문양으로 새겨졌습니다. 지금은 ${cat.name} 서가 ${b.si+1}번째 칸, 왼쪽에서 ${b.bi+1}번째 자리에 꽂혀 있습니다.`;
+}
+// 서고 = 분석 완료. 균주 판매는 제작자가 허가한 것만 (나머지는 미판매)
+{
+  let s3 = 77; const r3 = () => (s3 = (s3 * 16807) % 2147483647) / 2147483647;
+  const BASEP = [32000, 38000, 36000, 34000, 30000];
+  ALL.forEach(b => { b.sale = r3() < .66; b.price = BASEP[b.ci] + Math.round(r3()*6)*1000; });
+}
+// 맛: 여섯 갈래 세기 (0~100). 갈래마다 바탕이 다르고 집마다 흔들림. 70 이상이면 '강한 맛'
+const TASTES = ['짠맛', '단맛', '신맛', '감칠맛', '매운맛', '구수한맛'];
+{
+  const TB = [[50,25,72,55,55,15], [86,25,10,76,2,40], [70,10,10,60,5,82], [55,62,10,45,82,35], [2,58,62,25,2,48]];
+  let s5 = 211; const r5 = () => (s5 = (s5 * 16807) % 2147483647) / 2147483647;
+  ALL.forEach(b => { b.taste = TB[b.ci].map(v => Math.max(0, Math.min(100, Math.round(v + (r5() - .5)*58)))); });
+}
+const strongOf = b => { const t = TASTES.filter((_, i) => b.taste[i] >= 70); return t.length ? t : [TASTES[b.taste.indexOf(Math.max(...b.taste))]]; };
+// 접수실 = 아직 분석 전인 새 기록 (문양 없음)
+const STATES = ['접수 완료', '방문 수거 대기', '분석 중'];
+const PENDING = [];
+{
+  let s4 = 131; const r4 = () => (s4 = (s4 * 16807) % 2147483647) / 2147483647;
+  const pick4 = a => a[Math.floor(r4()*a.length)];
+  for (let i = 0; i < 64; i++){
+    const ci = Math.floor(r4()*5), client = pick4(FAM) + pick4(GIVEN), rel = pick4(REL);
+    const day = 260 + Math.floor(r4()*26), mins = 9*60 + Math.floor(r4()*9*60);
+    const at = new Date(2026, 0, day, Math.floor(mins/60), mins % 60);
+    const age = (new Date(2026, 9, 13) - at) / 864e5;
+    PENDING.push({ ci, sub:pick4(CATS[ci].subs), color:CATS[ci].c,
+      rec:{ client, maker: rel === '본인' ? `본인 ${client}` : `${rel} ${makerName(rel, pick4)}`, at,
+        state: STATES[age < 4 ? 0 : age < 10 ? 1 : 2] } });
+  }
+  [...PENDING].sort((a, b) => a.rec.at - b.rec.at).forEach(b => { const k = mmdd(b.rec.at); daySeq[k] = (daySeq[k] || 0) + 1; b.rec.id = `SM-26-${k}-${pad(daySeq[k], 3)}`; });
+  PENDING.sort((a, b) => b.rec.at - a.rec.at);
+}
+const won = n => n.toLocaleString('ko-KR') + '원';
+const ARTS = Array.from({length:10}, (_, i) => { const im = new Image(); im.src = `art/${pad(i+1)}.png`; return im; });
+const artsReady = Promise.all(ARTS.map(im => im.decode ? im.decode().catch(() => {}) : new Promise(r => { im.onload = im.onerror = r; })));
+const $ = id => document.getElementById(id);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ════════════════ 두 공간 오가기 ════════════════ */
+let view = 'intro';
+const veil = $('veil');
+const tabs = [...document.querySelectorAll('#nav button')];
+const markNav = () => tabs.forEach(b => b.setAttribute('aria-current', String(b.dataset.v === view)));
+function setView(v, then){
+  if (v === view){ then && then(); return; }
+  veil.style.opacity = 1;
+  setTimeout(() => {
+    view = v; document.body.dataset.view = v; markNav();
+    if (v === 'archive') onArchiveShown();
+    if (v === 'intro') $('intro').scrollTop = 0;
+    if (v === 'gain') $('gain').scrollTop = 0;
+    if (v === 'how') $('how').scrollTop = 0;
+    then && then();
+    requestAnimationFrame(() => veil.style.opacity = 0);
+  }, reduce ? 0 : 450);
+}
+tabs.forEach(b => b.onclick = () => setView(b.dataset.v));
+$('logo').onclick = () => setView('intro');
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => setView(b.dataset.go));
+document.body.dataset.view = view; markNav();
+
+/* ════════════════ 접수실 ════════════════ */
+const stage = $('stage'), caption = $('caption'), rhint = $('rhint'), cats = $('cats');
+const items = [];            // 접수실 카드 = {b, mesh} (3D) 또는 {b, el} (WebGL이 안 될 때)
+let R3 = null;
+try { const rr = new THREE.WebGLRenderer({canvas:$('rgl'), antialias:true, alpha:true}); if (rr.getContext()) R3 = { r:rr }; } catch(e){}
+if (!R3) $('rgl').remove();
+function makeCard(b){ return R3 ? makeCard3(b) : makeCardDOM(b); }
+function makeCardDOM(b){
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.style.setProperty('--kc', CATS[b.ci].c);
+  if (lum(CATS[b.ci].c) < 110){ el.style.setProperty('--ki', '#F8F2DA'); el.style.setProperty('--ks', 'rgba(0,0,0,.25)'); }   // 어두운 카드는 밝은 글씨
+  const fresh = (Date.now() - b.rec.at) < 864e5*2 || b.rec.fresh;
+  el.innerHTML = `${fresh ? '<span class="new">NEW</span>' : ''}<div class="ct">${b.rec.client} 댁의 ${b.sub || CATS[b.ci].name}</div>
+    <div class="cb"><div>${CATS[b.ci].name}<span>${b.rec.maker}</span>${b.rec.state}</div><div>${b.rec.id}<span>${fmtAt(b.rec.at).slice(0,10)} 접수</span></div></div>`;
+  const it = { b, el };
+  el.addEventListener('click', e => { e.stopPropagation(); onCardClick(it); });
+  stage.appendChild(el);
+  return it;
+}
+/* ── 3D 접수 카드: 서고와 같은 HDRI·햇빛·채움광, 첨부 리넨 종이(색·노멀) ── */
+const CARD_W = 1, CARD_H = .72, CARD_D = .006;
+let makeCard3 = () => null, frame3 = () => {}, pick3 = () => null;
+if (R3){
+  const T = THREE, rr = R3.r, sc = new T.Scene();
+  const L = h => new T.Color(h).convertSRGBToLinear();
+  rr.setPixelRatio(Math.min(devicePixelRatio, 2));
+  rr.outputEncoding = T.sRGBEncoding; rr.toneMapping = T.ACESFilmicToneMapping; rr.toneMappingExposure = .82;
+  rr.shadowMap.enabled = true; rr.shadowMap.type = T.PCFSoftShadowMap;
+  const cam = new T.PerspectiveCamera(24, 1, .1, 100);
+  cam.position.set(.2, 2.3, 6.4); cam.lookAt(.2, .42, 0);
+  // 빛: 서고와 같은 값
+  sc.add(new T.HemisphereLight(L(0xfffaf2), L(0xc9bfb1), .26));
+  const sun = new T.DirectionalLight(L(0xfff1df), 1.55); sun.position.set(9, 7.5, 7); sun.target.position.set(0, 0, -4); sc.add(sun, sun.target);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .02;
+  Object.assign(sun.shadow.camera, {left:-7, right:7, top:7, bottom:-7, near:1, far:40}); sun.shadow.camera.updateProjectionMatrix();
+  const fill = new T.DirectionalLight(L(0xfff6ec), .85); fill.position.set(-10, 2.2, 1); fill.target.position.set(0, 2.2, 1); sc.add(fill, fill.target);
+  // 카드가 서 있는 바닥: 그림자만 받음 (바탕은 접수실 그대로 비침)
+  const ground = new T.Mesh(new T.PlaneGeometry(40, 40), new T.ShadowMaterial({opacity:.16}));
+  ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; sc.add(ground);
+  // 반사·주변광: 서고와 같은 HDRI (불러오기 전에는 흰 방)
+  {
+    const pm = new T.PMREMGenerator(rr), env = new T.Scene();
+    env.add(new T.Mesh(new T.BoxGeometry(13, 7, 15), new T.MeshBasicMaterial({color:L(0xe9e6e0), side:T.BackSide})));
+    sc.environment = pm.fromScene(env, .04).texture;
+    const img = new Image(); img.src = 'sky_rgbe.png';
+    img.decode().then(() => {
+      const W = img.naturalWidth, H = img.naturalHeight, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d'); g.drawImage(img, 0, 0); const px = g.getImageData(0, 0, W, H).data, f = new Float32Array(W*H*4);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+        const i = (y*W + x)*4, o = ((H - 1 - y)*W + x)*4, e = px[i+3], k = e ? Math.pow(2, e - 136) : 0;
+        f[o] = px[i]*k; f[o+1] = px[i+1]*k; f[o+2] = px[i+2]*k; f[o+3] = 1;
+      }
+      const tex = new T.DataTexture(f, W, H, T.RGBAFormat, T.FloatType);
+      tex.mapping = T.EquirectangularReflectionMapping; tex.magFilter = tex.minFilter = T.LinearFilter; tex.needsUpdate = true;
+      sc.environment = pm.fromEquirectangular(tex).texture;
+    }).catch(() => {});
+  }
+  // 리넨 종이
+  const linAlb = new Image(); linAlb.src = 'tex/linen_albedo.jpg';
+  const linNor = new T.TextureLoader().load('tex/linen_normal.jpg');
+  const geo = new T.BoxGeometry(CARD_W, CARD_H, CARD_D);
+  function paint(c, b, Wpx){
+    const Hpx = Math.round(Wpx*CARD_H/CARD_W); c.width = Wpx; c.height = Hpx;
+    const g = c.getContext('2d'), col = CATS[b.ci].c;
+    g.fillStyle = col; g.fillRect(0, 0, Wpx, Hpx);
+    if (linAlb.complete && linAlb.naturalWidth){ g.globalCompositeOperation = 'multiply'; g.drawImage(linAlb, 0, 0, Wpx, Hpx); g.globalCompositeOperation = 'source-over'; }
+    const dark = lum(col) < 110, ink = dark ? '#F8F2DA' : '#1b1916', hi = dark ? 'rgba(0,0,0,.28)' : 'rgba(255,255,255,.4)';
+    const fs = Wpx*.052, font = sz => `500 ${sz}px Pretendard, "Apple SD Gothic Neo", sans-serif`, off = Math.max(1, Wpx/600);
+    const put = (parts, cx, y, sz, base) => {          // 글자 조각 사이를 .55em씩 띄워 가운데 정렬 (레터프레스처럼 아래로 옅은 빛)
+      g.font = font(sz); g.textBaseline = base; g.textAlign = 'left';
+      const gap = sz*1.1, ws = parts.map(t => g.measureText(t).width), tot = ws.reduce((a, w) => a + w, 0) + gap*(parts.length - 1);
+      let x = cx - tot/2;
+      parts.forEach((t, i) => { g.fillStyle = hi; g.fillText(t, x, y + off); g.fillStyle = ink; g.fillText(t, x, y); x += ws[i] + gap; });
+    };
+    put([`${b.rec.client} 댁의 ${b.sub || CATS[b.ci].name}`], Wpx/2, Wpx*.06, fs*1.25, 'top');
+    const yb = Hpx - Wpx*.05 - fs*.18;
+    put([b.rec.id, `${fmtAt(b.rec.at).slice(0,10)} 접수`], Wpx/2, yb, fs, 'bottom');
+    put([CATS[b.ci].name, b.rec.maker, b.rec.state], Wpx/2, yb - fs*1.35, fs, 'bottom');
+    if ((Date.now() - b.rec.at) < 864e5*2 || b.rec.fresh){ g.font = font(fs*.8); g.textAlign = 'right'; g.textBaseline = 'top'; g.fillStyle = ink; g.fillText('NEW', Wpx - Wpx*.05, Wpx*.05); }
+  }
+  function setRes(it, w){
+    if (it.res === w) return; it.res = w;
+    const c = document.createElement('canvas'); paint(c, it.b, w);
+    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = rr.capabilities.getMaxAnisotropy();
+    if (it.front.map) it.front.map.dispose(); it.front.map = t; it.front.needsUpdate = true; it.cv = c;
+  }
+  const repaint = () => items.forEach(it => { if (it.cv){ paint(it.cv, it.b, it.res); it.front.map.needsUpdate = true; } });
+  linAlb.onload = repaint;
+  if (document.fonts) document.fonts.load('500 40px Pretendard').then(repaint).catch(() => {});
+  makeCard3 = b => {
+    const col = L(CATS[b.ci].c), nscale = new T.Vector2(.55, .55);
+    const edge = new T.MeshStandardMaterial({color:col.clone().multiplyScalar(.82), roughness:.92});
+    const front = new T.MeshStandardMaterial({roughness:.9, metalness:0, normalMap:linNor, normalScale:nscale, envMapIntensity:.9});
+    const back = new T.MeshStandardMaterial({color:col, roughness:.9, normalMap:linNor, normalScale:nscale, envMapIntensity:.9});
+    const mesh = new T.Mesh(geo, [edge, edge, edge, edge, front, back]);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    const it = { b, mesh, front, res:0 }; mesh.userData.it = it;
+    setRes(it, 512); sc.add(mesh); return it;
+  };
+  // 쌓는 방향: 앞왼쪽 → 뒤오른쪽. 카드 앞면은 앞왼쪽을 봄
+  const dir = new T.Vector3(1, 0, -1).normalize(), qStack = new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), -Math.PI/4);
+  const P = new T.Vector3(), Q = new T.Quaternion(), O = new T.Vector3();
+  let hiIt = null, lastW = 0, lastH = 0;
+  frame3 = (W, H, layout) => {
+    if (W !== lastW || H !== lastH){
+      lastW = W; lastH = H; rr.setSize(W, H, false); cam.aspect = W/H;
+      const f = Math.max(1, 1.1/cam.aspect) * .6;   // .72: 더 가까이 (클로즈업)           // 좁은 화면에서는 카메라를 뒤로 물려 더미가 다 보이게
+      cam.position.set(.2*f, 2.3*f, 6.4*f); cam.lookAt(.2, .42, 0); cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+    }
+    const { ox, oy, openW, openK, cur } = layout;
+    // 펼친 카드 자리: 화면에서 예전과 같은 위치·크기가 되도록 카메라 앞에 둠
+    const th = Math.tan(cam.fov*Math.PI/360), D = H/(2*th*openW)*CARD_W;
+    O.set(((ox/W)*2 - 1)*D*th*cam.aspect, (1 - (oy/H)*2)*D*th, -D); cam.localToWorld(O);
+    const STEP3 = .06, GAP3 = .95 + openK*.35, back = smooth(Math.min(1, openK))*2.2;   // 펼치면 나머지 카드 더미는 뒤로 물러남
+    act.forEach((it, p) => {
+      const d = p - s, ad = Math.abs(d), sm = smooth(Math.min(ad, 1));
+      const off = d*STEP3 + Math.sign(d)*sm*GAP3, k = (1 - sm)*smooth(open);
+      P.copy(dir).multiplyScalar(off); P.y = CARD_H/2; P.z -= back*(1 - k); P.x += back*.35*(1 - k);
+      it.mesh.position.lerpVectors(P, O, k);
+      it.mesh.quaternion.slerpQuaternions(qStack, cam.quaternion, k);
+      it.mesh.castShadow = k < .15;                     // 카메라 앞으로 떠오른 카드는 바닥에 큰 그림자를 남기지 않게
+      const top = k > .3;                               // 펼친 카드는 다른 카드 더미보다 항상 앞에 그림
+      if (it.top !== top){ it.top = top; it.mesh.renderOrder = top ? 10 : 0; it.mesh.material.forEach(m => { m.depthTest = !top; m.transparent = top; m.needsUpdate = true; }); }
+      if (k > .3 && p === cur && hiIt !== it){ if (hiIt) setRes(hiIt, 512); setRes(it, 2048); hiIt = it; }   // 펼친 카드는 글씨를 크게 다시 그려 선명하게
+    });
+    rr.render(sc, cam);
+  };
+  const rc = new T.Raycaster(), nd = new T.Vector2();
+  pick3 = e => {
+    const r = $('rgl').getBoundingClientRect(); nd.set((e.clientX - r.left)/r.width*2 - 1, -((e.clientY - r.top)/r.height)*2 + 1);
+    rc.setFromCamera(nd, cam); const h = rc.intersectObjects(act.map(it => it.mesh), false);
+    return h.length ? h[0].object.userData.it : null;
+  };
+}
+PENDING.forEach(b => items.push(makeCard(b)));
+const blobs = R3 ? [] : [0,1].map(() => { const d = document.createElement('div'); d.className = 'blob'; stage.prepend(d); return d; });
+
+let act = items.slice(), kindFilter = -1;
+let s = 6, target = 6, open = 0, isOpen = false, pendingOpen = -1;
+const clampT = v => Math.max(0, Math.min(act.length - 1, v));
+function buildCats(){
+  cats.innerHTML = '';
+  [{label:"모든 것", kind:-1}, ...CATS.map((c, i) => ({label:c.name, kind:i}))].forEach(d => {
+    const n = d.kind < 0 ? items.length : items.filter(it => it.b.ci === d.kind).length;
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="n">(${n})</span> ${d.label}`;
+    btn.setAttribute('aria-pressed', String(d.kind === kindFilter));
+    btn.onclick = e => { e.stopPropagation(); filterBy(d.kind); };
+    cats.appendChild(btn);
+  });
+}
+function filterBy(kind, keepPos){
+  closeCard(); kindFilter = kind;
+  act = items.filter(it => kind < 0 || it.b.ci === kind);
+  items.forEach(it => { const on = act.includes(it); if (it.el) it.el.hidden = !on; if (it.mesh) it.mesh.visible = on; });
+  if (!keepPos) s = target = Math.min(6, Math.floor(act.length * .3));
+  buildCats();
+}
+buildCats();
+
+const PX_PER_CARD = 14;
+let lastX = null, idle, dragging = false;
+function settleSoon(){ clearTimeout(idle); idle = setTimeout(() => { target = clampT(Math.round(target)); }, 110); }
+const recEl = $('reception');
+recEl.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' && !dragging){ lastX = e.clientX; return; }
+  if (isOpen || pendingOpen >= 0){ lastX = e.clientX; return; }
+  if (lastX !== null) target = clampT(target + (e.clientX - lastX) / PX_PER_CARD);
+  lastX = e.clientX; settleSoon();
+});
+recEl.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; });
+addEventListener('pointerup', () => { dragging = false; });
+recEl.addEventListener('pointerleave', () => { lastX = null; });
+recEl.addEventListener('wheel', e => {
+  e.preventDefault(); if (isOpen) return;
+  target = clampT(target + (e.deltaY + e.deltaX) / 60); settleSoon();
+}, {passive:false});
+recEl.addEventListener('click', e => {
+  const it = R3 ? pick3(e) : null;
+  if (it){ onCardClick(it); return; }
+  if (isOpen) closeCard();
+});
+if (R3) recEl.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') $('rgl').style.cursor = pick3(e) ? 'pointer' : ''; });
+
+function onCardClick(it){
+  if (isOpen){ closeCard(); return; }
+  const p = act.indexOf(it);
+  if (Math.abs(p - s) < .5){ openCard(); return; }
+  target = p; pendingOpen = p;            // 그 카드로 넘긴 뒤 자리 잡으면 펼침
+
+}
+function openCard(){
+  isOpen = true; target = s = clampT(Math.round(s));
+  const b = act[Math.round(s)].b, cat = CATS[b.ci], st = STATES.indexOf(b.rec.state);
+  caption.innerHTML = `<p class="when">( ${fmtAt(b.rec.at)} )</p>
+    <dl><dt>의뢰인</dt><dd>${b.rec.client}</dd>
+      <dt>최초 제작자</dt><dd>${b.rec.maker}</dd>
+      <dt>식품 종류</dt><dd>${cat.name}${b.sub ? ' · ' + b.sub : ''}</dd>
+      <dt>고유번호</dt><dd>${b.rec.id}</dd>
+      ${b.rec.visit ? `<dt>방문 예정</dt><dd>${b.rec.visit}</dd>` : ''}</dl>
+    <div class="state wait"><i></i><b style="font-weight:500;color:var(--ink)">${b.rec.state}</b></div>
+`;
+  caption.classList.add('on'); rhint.style.opacity = 0;
+}
+function closeCard(){ isOpen = false; pendingOpen = -1; caption.classList.remove('on'); rhint.style.opacity = ''; }
+caption.addEventListener('click', e => e.stopPropagation());
+
+/* 기록 맡기기 */
+const formWrap = $('formWrap');
+const FEE = [120000, 150000, 150000, 140000, 130000];   // 식품별 기본 분석료
+$('fKinds').innerHTML = CATS.map((c, i) => `<label style="--c:${c.c}"><input type="radio" name="kind" value="${i}"${i ? '' : ' checked'}><span>${c.name}<small>분석료 ${won(FEE[i])}</small></span></label>`).join('');
+const kindVal = () => +(document.querySelector('input[name="kind"]:checked') || {value:0}).value;
+let fStep = 1;
+function setStep(n){
+  fStep = n;
+  document.querySelectorAll('#giveForm .fs').forEach(f => f.hidden = +f.dataset.step !== n);
+  [...$('fProg').children].forEach((li, i) => { li.classList.toggle('on', i === n - 1); li.classList.toggle('done', i < n - 1); });
+  $('fNum').innerHTML = `${pad(n)}<small>/03</small>`;
+  $('fNextT').textContent = n < 3 ? '다음' : '결제하고 접수하기';
+  $('fCancel').textContent = n > 1 ? '← 이전 단계' : '닫기';
+  $('fNote').hidden = n < 3;
+  formWrap.scrollTop = 0;
+  $('fErr').textContent = '';
+  if (n === 3){
+    const ci = kindVal(), fee = FEE[ci];
+    $('fBill').innerHTML = `<p><span>${CATS[ci].name} 미생물 분석</span><span>${won(fee)}</span></p><p><span>방문 수거</span><span>${won(20000)}</span></p><p><span>가인 날인 · 서고 보관</span><span>${won(30000)}</span></p><p class="tt"><span>합계</span><b>${won(fee + 50000)}</b></p>`;
+  }
+  const first = document.querySelector(`#giveForm .fs[data-step="${n}"] input:not([type=radio]), #giveForm .fs[data-step="${n}"] select`);
+  if (first) setTimeout(() => { if (!document.activeElement || !document.activeElement.closest('.fs:not([hidden])')) first.focus(); }, 30);
+}
+const minVisit = () => { const d = new Date(); d.setDate(d.getDate() + 2); return d.toISOString().slice(0, 10); };
+$('give').onclick = () => { closeCard(); $('giveForm').reset(); $('fDate').min = minVisit(); formWrap.hidden = false; setStep(1); };
+$('fCancel').onclick = () => { if (fStep > 1) setStep(fStep - 1); else formWrap.hidden = true; };
+$('fX').onclick = () => formWrap.hidden = true;
+addEventListener('keydown', e => { if (!formWrap.hidden && e.key === 'Escape'){ e.stopImmediatePropagation(); formWrap.hidden = true; } }, true);
+const fail = (msg, id) => { $('fErr').textContent = msg; $(id).focus(); return false; };
+function checkStep(n){
+  if (n === 1){
+    if (!$('fClient').value.trim()) return fail('의뢰인 이름을 적어 주세요.', 'fClient');
+    if ($('fRel').value !== '본인' && !$('fMaker').value.trim()) return fail('최초 제작자 이름을 적어 주세요.', 'fMaker');
+    if (!$('fName').value) $('fName').value = $('fClient').value.trim();
+  }
+  if (n === 2){
+    if (!$('fName').value.trim()) return fail('이름을 적어 주세요.', 'fName');
+    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('fTel').value.trim())) return fail('연락처를 010-0000-0000 형식으로 적어 주세요.', 'fTel');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('fMail').value.trim())) return fail('이메일 주소를 확인해 주세요.', 'fMail');
+    if ($('fPw').value.length < 4) return fail('비밀번호를 4자 이상으로 정해 주세요.', 'fPw');
+    if (!$('fAddr').value.trim()) return fail('방문할 주소를 적어 주세요.', 'fAddr');
+    if (!$('fDate').value || $('fDate').value < minVisit()) return fail('방문 희망일은 오늘부터 이틀 뒤부터 고를 수 있어요.', 'fDate');
+  }
+  return true;
+}
+$('giveForm').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!checkStep(fStep)) return;
+  if (fStep < 3){ setStep(fStep + 1); return; }
+  const client = $('fClient').value.trim(), makerName = $('fMaker').value.trim(), rel = $('fRel').value;
+  const ci = kindVal(), now = new Date(), k = mmdd(now);
+  daySeq[k] = (daySeq[k] || 0) + 1;
+  const [yy, mm, dd] = $('fDate').value.split('-');
+  const b = { ci, sub:'', color:CATS[ci].c,
+    rec:{ client, maker: rel === '본인' ? `본인 ${client}` : `${rel} ${makerName}`, at:now, state:'접수 완료', fresh:true,
+      visit:`${yy}.${mm}.${dd}`, id:`SM-${String(now.getFullYear()).slice(2)}-${k}-${pad(daySeq[k], 3)}` } };
+  $('fPw').value = '';                                          // 비밀번호는 어디에도 남기지 않음
+  const it = makeCard(b);
+  items.unshift(it);
+  formWrap.hidden = true;
+  filterBy(-1, true);
+  s = Math.min(s + 1, act.length - 1); target = 0;
+  setTimeout(openCard, reduce ? 0 : 900);
+});
+
+addEventListener('keydown', e => {
+  if (view !== 'reception' || !formWrap.hidden) return;
+  if (e.key === 'Escape') closeCard();
+  if (isOpen) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   target = clampT(Math.round(target) + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown') target = clampT(Math.round(target) - 1);
+  if (e.key === 'Enter') openCard();
+});
+
+const smooth = t => t*t*(3 - 2*t);
+const SKEW = 26, SQUASH = .8;
+(function recFrame(){
+  requestAnimationFrame(recFrame);
+  if (view !== 'reception') return;
+  s += (target - s) * (reduce ? 1 : .12);
+  if (pendingOpen >= 0 && Math.abs(s - pendingOpen) < .04){ s = target = pendingOpen; pendingOpen = -1; openCard(); }
+  open += ((isOpen ? 1 : 0) - open) * (reduce ? 1 : .1);
+  const W = innerWidth, H = innerHeight, U = Math.min(W, H * 1.6);
+  const cw = .2*U, ch = cw*.72, STEP = .0105*U, GAP = .26*U + open*.5*U;
+  const cx = W*.5, cy = H*.53;
+  const side = W > 980;
+  const openScale = Math.min(W*(side ? .46 : .56)/cw, H*(side ? .56 : .44)/ch);
+  const ox = side ? W*.42 : cx, oy = side ? H*.5 : H*.38;
+  const along = a => [cx + a, cy - a*.5];
+  if (R3){
+    const cur = Math.round(s), k = smooth(open);
+    frame3(W, H, { ox, oy, openW: cw*openScale, openK: open, cur });
+    if (k > .02){ const r = ox + cw*openScale/2, bot = oy + ch*openScale/2;
+      caption.style.transform = side ? `translate(${r + 28}px, ${Math.max(70, bot - caption.offsetHeight)}px)` : `translate(${ox - cw*openScale/2}px, ${bot + 16}px)`; }
+    return;
+  }
+  act.forEach((it, p) => {
+    const d = p - s, ad = Math.abs(d), sm = smooth(Math.min(ad, 1));
+    let [x, y] = along(d*STEP + Math.sign(d)*sm*GAP);
+    const k = (1 - sm) * smooth(open);
+    const sx = (SQUASH + (1 - SQUASH)*k) * (1 + (openScale - 1)*k), sy = 1 + (openScale - 1)*k;
+    x += (ox - x)*k; y += (oy - y)*k;
+    const el = it.el;
+    // 확대분(sy)은 크기 자체로 반영해 글씨를 실제 크기로 다시 그림 → 확대해도 선명
+    const W2 = cw*sy, H2 = ch*sy;
+    if (it._w !== W2){ it._w = W2; el.style.width = W2 + 'px'; el.style.height = H2 + 'px'; el.style.setProperty('--cw', W2 + 'px'); }
+    el.style.transform = `translate(${x - W2/2}px,${y - H2/2}px) skewY(${SKEW*(1 - k)}deg) scaleX(${sx/sy})`;
+    el.style.zIndex = k > .02 ? 2000 : 1000 - p;
+    if (k > .02 && p === Math.round(s)){
+      const r = x + cw*sx/2, bot = y + ch*sy/2;
+      caption.style.transform = side ? `translate(${r + 28}px, ${Math.max(70, bot - caption.offsetHeight)}px)` : `translate(${x - cw*sx/2}px, ${bot + 16}px)`;
+    }
+  });
+  const len = Math.max(8, act.length*.45) * STEP;
+  [-1, 1].forEach((sd, j) => {
+    const [x, y] = along(sd*(GAP + len*.5)), b = blobs[j];
+    b.style.width = (len*1.25 + cw*.8) + 'px'; b.style.height = (ch*.55) + 'px';
+    b.style.transform = `translate(${x - (len*1.25 + cw*.8)/2}px, ${y + ch*.38}px) rotate(-26.5deg)`;
+  });
+})();
+
+/* ════════════════ 서고 (3D) ════════════════ */
+const canvas = $('gl'), tip = $('tip'), help = $('help'), hold = $('hold');
+const roamUI = [$('uHelpBtn'), $('uJump')];
+const browseUI = [$('leave'), $('crumb'), $('uHint'), $('uArrows')];
+const show = (els, on) => els.forEach(e => e.classList.toggle('off', !on));
+$('helpOk').onclick = () => help.classList.add('off');
+$('helpBtn').onclick = () => help.classList.toggle('off');
+CATS.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.innerHTML = `<span class="n">(${c.count})</span> ${c.name}`;
+  b.onclick = () => { help.classList.add('off'); enterCase(i); };
+  $('uJump').appendChild(b);
+});
+let helpShown = false;
+function onArchiveShown(){
+  resize();
+  if (!helpShown && mode === 'roam' && pendingHold === null){ helpShown = true; help.classList.remove('off'); }
+}
+
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias:true}); } catch(e){}
+const glOK = !!(window.THREE && renderer && renderer.getContext());
+let mode = 'roam', cur = -1, pendingHold = null, held = null, hover = null;
+let enterCase = () => {}, resize = () => {}, holdBook = () => {}, tryPending = () => {};
+
+if (!glOK){
+  const n = document.createElement('div'); n.className = 'nogl arch';
+  n.textContent = '이 브라우저에서는 3D 서고를 그릴 수 없어요. 크롬이나 사파리 최신판으로 열어 주세요.';
+  document.body.appendChild(n);
+} else {
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .82;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const SRGB = t => { t.encoding = THREE.sRGBEncoding; return t; };
+scene.background = lin(0xdfe6ee);
+// 멀리 있는 것도 흐려지지 않게 안개 없음
+const camera = new THREE.PerspectiveCamera(58, 1, .05, 200);
+camera.rotation.order = 'YXZ';
+const mk = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c; };
+
+/* ── 재질 만들기: 이어 붙여도 이음새가 안 보이는 잡음으로 회반죽·돌·나무결을 그림 ── */
+function fbm(size, base, oct, seed){
+  const out = new Float32Array(size*size); let amp = 1, tot = 0, s = seed;
+  const r = () => (s = (s*16807) % 2147483647) / 2147483647;
+  for (let o = 0; o < oct; o++){
+    const n = base << o, grid = new Float32Array(n*n);
+    for (let i = 0; i < n*n; i++) grid[i] = r();
+    for (let y = 0; y < size; y++){
+      const gy = y/size*n, y0 = Math.floor(gy), fy = gy - y0, sy = fy*fy*(3 - 2*fy), y1 = (y0 + 1) % n;
+      for (let x = 0; x < size; x++){
+        const gx = x/size*n, x0 = Math.floor(gx), fx = gx - x0, sx = fx*fx*(3 - 2*fx), x1 = (x0 + 1) % n;
+        const a = grid[y0*n + x0], b = grid[y0*n + x1], c = grid[y1*n + x0], d = grid[y1*n + x1];
+        const top = a + (b - a)*sx, bot = c + (d - c)*sx;
+        out[y*size + x] += amp*(top + (bot - top)*sy);
+      }
+    }
+    tot += amp; amp *= .5;
+  }
+  for (let i = 0; i < out.length; i++) out[i] /= tot;
+  return out;
+}
+function texFrom(size, H, colorAt, strength){
+  const col = mk(size, size, g => {
+    const im = g.createImageData(size, size);
+    for (let i = 0; i < size*size; i++){ const [r, gg, b] = colorAt(H[i], i % size, (i/size)|0); im.data[i*4] = r; im.data[i*4+1] = gg; im.data[i*4+2] = b; im.data[i*4+3] = 255; }
+    g.putImageData(im, 0, 0);
+  });
+  const nor = mk(size, size, g => {
+    const im = g.createImageData(size, size), at = (x, y) => H[((y + size) % size)*size + (x + size) % size];
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+      let nx = -(at(x+1, y) - at(x-1, y))*strength, ny = -(at(x, y+1) - at(x, y-1))*strength, nz = 1;
+      const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+      const i = (y*size + x)*4; im.data[i] = (nx*.5 + .5)*255; im.data[i+1] = (ny*.5 + .5)*255; im.data[i+2] = (nz*.5 + .5)*255; im.data[i+3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+  });
+  const map = SRGB(new THREE.CanvasTexture(col)), nmap = new THREE.CanvasTexture(nor);
+  [map, nmap].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; });
+  return { map, nmap };
+}
+const clamp255 = v => Math.max(0, Math.min(255, v));
+
+// 첨부해 주신 질감 자료(색·거칠기·요철)를 이어 붙여 씀
+const TL = new THREE.TextureLoader();
+function pbr(name, rx, ry, opt = {}){
+  const alb = opt.gray ? name + 'g' : name;
+  const set = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 8; return t; };
+  const o = { map:SRGB(set(TL.load(`tex/${alb}_albedo.jpg`))), roughnessMap:set(TL.load(`tex/${name}_rough.jpg`)), roughness:opt.r || 1 };
+  if (opt.bump){ o.bumpMap = set(TL.load(`tex/${name}_normal.jpg`)); o.bumpScale = opt.bump; }
+  else { o.normalMap = set(TL.load(`tex/${name}_normal.jpg`)); o.normalScale = new THREE.Vector2(opt.ns || .7, opt.ns || .7); }
+  return o;
+}
+/* 빛: 천장 가운데 긴 천창에서 내려오는 부드러운 빛 + 은은한 주변광 */
+scene.add(new THREE.HemisphereLight(lin(0xfffaf2), lin(0xc9bfb1), .26));
+const sunL = new THREE.DirectionalLight(lin(0xfff1df), 1.55);
+sunL.position.set(9, 7.5, 7); sunL.target.position.set(0, 0, -4); scene.add(sunL, sunL.target);
+const fillL = new THREE.DirectionalLight(lin(0xfff6ec), .85); fillL.position.set(-10, 2.2, 1); fillL.target.position.set(0, 2.2, 1); scene.add(fillL, fillL.target);   // 그림자 없는 반대편 채움광
+sunL.castShadow = true; sunL.shadow.mapSize.set(2048, 2048); sunL.shadow.bias = -.0004; sunL.shadow.normalBias = .02;
+Object.assign(sunL.shadow.camera, { left:-16, right:16, top:16, bottom:-16, near:1, far:40 }); sunL.shadow.camera.updateProjectionMatrix();
+// 반사용 환경: 흰 방과 밝은 천창
+{
+  const env = new THREE.Scene();
+  env.add(new THREE.Mesh(new THREE.BoxGeometry(10, 7, 11), new THREE.MeshBasicMaterial({color:lin(0xe9e6e0), side:THREE.BackSide})));
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 7), new THREE.MeshBasicMaterial({color:new THREE.Color(4, 3.9, 3.7)}));
+  sky.rotation.x = Math.PI/2; sky.position.y = 3.9; env.add(sky);
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(env, .04).texture;
+  // 첨부 HDRI(하늘): 반사·주변광으로 쓰고, 천창 틈으로 하늘이 보이게 배경으로도 씀
+  const skyImg = new Image(); skyImg.src = 'sky_rgbe.png';
+  skyImg.decode().then(() => {
+    // PNG의 RGBE(색 + 공통 지수)를 실수 값으로 풀어 HDR로 복원 (아래위 뒤집기 포함)
+    const W = skyImg.naturalWidth, H = skyImg.naturalHeight, px = mk(W, H, g => g.drawImage(skyImg, 0, 0)).getContext('2d').getImageData(0, 0, W, H).data;
+    const f = new Float32Array(W*H*4);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const i = (y*W + x)*4, o = ((H - 1 - y)*W + x)*4, e = px[i+3];
+      const k = e ? Math.pow(2, e - 136) : 0;
+      f[o] = px[i]*k; f[o+1] = px[i+1]*k; f[o+2] = px[i+2]*k; f[o+3] = 1;
+    }
+    const tex = new THREE.DataTexture(f, W, H, THREE.RGBAFormat, THREE.FloatType);
+    tex.mapping = THREE.EquirectangularReflectionMapping; tex.magFilter = tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
+    const envTex = pm.fromEquirectangular(tex).texture;
+    scene.environment = envTex; scene.background = tex; scene.backgroundIntensity = .9;
+  }).catch(() => {});
+}
+
+/* 바닥 */
+const STONE_GRAY = lin(0xaaaaaa);   // 벽·바닥·항아리 받침 공통 회색
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 11), new THREE.MeshStandardMaterial({...pbr('floor2', 10/2, 11/2, {ns:.6, r:.9, gray:1}), color:STONE_GRAY, envMapIntensity:.5}));
+floor.rotation.x = -Math.PI/2; floor.position.set(0, 0, -2.5); floor.userData.floor = true; floor.receiveShadow = true; scene.add(floor);
+
+/* 벽: 회반죽. 바닥과 만나는 곳은 살짝 어둡게(걸레받이 그림자) */
+const WH = 6;
+const plasterMat = len => new THREE.MeshStandardMaterial({...pbr('wall2', len/2.2, WH/2.2, {ns:.5, gray:1}), color:STONE_GRAY, envMapIntensity:.4});
+[[10, 0, -8, 0], [11, -5, -2.5, Math.PI/2], [11, 5, -2.5, -Math.PI/2], [10, 0, 3, Math.PI]].forEach(([len, x, z, ry]) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(len, WH), plasterMat(len));
+  m.position.set(x, WH/2, z); m.rotation.y = ry; m.receiveShadow = true; scene.add(m);
+  const ao = new THREE.Mesh(new THREE.PlaneGeometry(len, .5), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(mk(4, 64, (g, w, h) => {
+    const gr = g.createLinearGradient(0, h, 0, 0); gr.addColorStop(0, 'rgba(90,82,72,.22)'); gr.addColorStop(1, 'rgba(90,82,72,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); })), transparent:true, depthWrite:false}));
+  ao.position.set(x + Math.sin(ry)*.01, .25, z + Math.cos(ry)*.01); ao.rotation.y = ry; scene.add(ao);
+});
+/* 천장: 회반죽 + 가운데 긴 천창 */
+{
+  // 천장: 가운데 천창 자리(폭 2.2 × 길이 11)를 비워 두고 네 조각으로 덮음 → 틈으로 HDRI 하늘이 보임
+  const ceilMat = new THREE.MeshStandardMaterial({...pbr('wall2', 4, 4, {ns:.4, gray:1}), color:STONE_GRAY, side:THREE.DoubleSide});
+  [[-3.05, -2.5, 3.9, 11], [3.05, -2.5, 3.9, 11], [0, -7, 2.2, 2], [0, 2, 2.2, 2]].forEach(([x, z, w, d]) => {
+    const c = new THREE.Mesh(new THREE.PlaneGeometry(w, d), ceilMat); c.rotation.x = Math.PI/2; c.position.set(x, WH, z); scene.add(c);
+  });
+  const reveal = new THREE.MeshStandardMaterial({color:lin(0xf4f2ee), roughness:.9});
+  [-1.1, 1.1].forEach(xx => { const r = new THREE.Mesh(new THREE.BoxGeometry(.04, .35, 7), reveal); r.position.set(xx, WH - .175, -2.5); scene.add(r); });
+}
+
+// 책장 면(종이): 거의 흰 종이에 아주 옅은 장 결
+// 책장 면(종이): 세월에 누렇게 바랜 종이 — 가장자리일수록 짙고, 장마다 결이 보임
+const paperTex = SRGB(new THREE.CanvasTexture(mk(128, 128, (g, w) => {
+  g.fillStyle = '#efe5cf'; g.fillRect(0, 0, w, w);
+  for (let y = 0; y < w; y += 2){ g.fillStyle = `rgba(150,125,85,${.06 + Math.random()*.12})`; g.fillRect(0, y, w, 1); }
+  const e = g.createRadialGradient(w/2, w/2, w*.25, w/2, w/2, w*.75); e.addColorStop(0, 'rgba(120,90,45,0)'); e.addColorStop(1, 'rgba(120,90,45,.35)');
+  g.fillStyle = e; g.fillRect(0, 0, w, w);
+})));
+// 책 한 권 = 흰 종이 뭉치 + 앞뒤 표지 판 + 책등 (표지가 종이보다 살짝 커서 위·아래·앞쪽으로 흰 면이 보임)
+const BOOK_PAGES = new THREE.BoxGeometry(.86, .94, .92).translate(0, 0, .005);   // 종이 뭉치: 위아래 .03, 앞쪽 .045 안으로 (책등 쪽은 붙임)
+const BOOK_BOARD = new THREE.BoxGeometry(.07, 1, 1);                   // 표지 판 (책 두께 방향 7%)
+const BOOK_SPINE = new THREE.BoxGeometry(1, 1, .035);                  // 책등
+const paperMat = new THREE.MeshStandardMaterial({map:paperTex, roughness:.95, emissive:new THREE.Color(.16, .155, .145)});   // 그늘에서도 종이가 하얗게
+// 책 표지·책등: 접수실 카드와 같은 리넨 종이 질감 (색 지도 + 노멀)
+const linenTex = (f, srgb) => { const t = TL.load(`tex/linen_${f}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); if (srgb) SRGB(t); return t; };
+const LINEN_A = linenTex('albedo', true), LINEN = { normalMap:linenTex('normal'), normalScale:new THREE.Vector2(.45, .45) };
+// 낡은 책: 모서리 닳음 · 손때 · 햇볕에 바랜 윗부분 · 긁힘 · 얼룩 (책마다 다르게)
+function ageOn(g, w, h, seed){
+  let s1 = (seed || 1) * 9301 % 233280; const r = () => (s1 = (s1 * 9301 + 49297) % 233280) / 233280;
+  g.save();
+  // 햇볕에 바랜 윗부분 (서가에 꽂혀 위만 빛을 받음)
+  const sun = g.createLinearGradient(0, 0, 0, h*.35); sun.addColorStop(0, `rgba(255,248,232,${.18 + r()*.18})`); sun.addColorStop(1, 'rgba(255,248,232,0)');
+  g.fillStyle = sun; g.fillRect(0, 0, w, h*.35);
+  // 가장자리 손때와 닳음
+  g.globalCompositeOperation = 'multiply';
+  const ed = Math.min(w, h)*.18;
+  [[0,0,w,ed,0,0,0,ed],[0,h-ed,w,ed,0,h,0,h-ed],[0,0,ed,h,0,0,ed,0],[w-ed,0,ed,h,w,0,w-ed,0]].forEach(([x,y,ww,hh,x0,y0,x1,y1]) => {
+    const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, `rgba(70,50,30,${.25 + r()*.2})`); gr.addColorStop(1, 'rgba(70,50,30,0)');
+    g.fillStyle = gr; g.fillRect(x, y, ww, hh);
+  });
+  // 얼룩 몇 군데
+  for (let i = 0, n = Math.floor(r()*3); i < n; i++){
+    const x = r()*w, y = r()*h, rad = (.08 + r()*.18)*Math.min(w, h)*1.6;
+    const st = g.createRadialGradient(x, y, 0, x, y, rad); st.addColorStop(0, `rgba(110,80,40,${.08 + r()*.1})`); st.addColorStop(.8, `rgba(110,80,40,${.05 + r()*.06})`); st.addColorStop(1, 'rgba(110,80,40,0)');
+    g.fillStyle = st; g.fillRect(x - rad, y - rad, rad*2, rad*2);
+  }
+  // 긁힘 (밝은 가는 선)
+  g.globalCompositeOperation = 'screen'; g.lineCap = 'round';
+  for (let i = 0, n = 4 + Math.floor(r()*10); i < n; i++){
+    const x = r()*w, y = r()*h, a = (r() - .5)*.9 + (r() < .5 ? 0 : Math.PI/2), l = (.05 + r()*.22)*Math.max(w, h);
+    g.strokeStyle = `rgba(255,245,225,${.12 + r()*.22})`; g.lineWidth = Math.max(1, w/220);
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a)*l, y + Math.sin(a)*l); g.stroke();
+  }
+  // 닳아서 바탕이 드러난 모서리 끝
+  g.globalCompositeOperation = 'source-over';
+  [[0,0],[w,0],[0,h],[w,h]].forEach(([x, y]) => { const rr = Math.min(w, h)*(.03 + r()*.05); const cg = g.createRadialGradient(x, y, 0, x, y, rr); cg.addColorStop(0, 'rgba(225,212,188,.55)'); cg.addColorStop(1, 'rgba(225,212,188,0)'); g.fillStyle = cg; g.fillRect(x - rr, y - rr, rr*2, rr*2); });
+  g.restore();
+}
+// 무늬 없는 책에 쓰는 공용 낡은 천: 리넨 + 바램 + 손때 (회색조, 책 색과 곱해짐)
+const WORN = SRGB(new THREE.CanvasTexture(mk(256, 512, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); ageOn(g, w, h, 7); })));
+WORN.wrapS = WORN.wrapT = THREE.ClampToEdgeWrapping;
+const linenOn = (g, w, h) => { const im = LINEN_A.image; if (im && im.complete && im.naturalWidth){ g.globalCompositeOperation = 'multiply'; g.drawImage(im, 0, 0, w, h); g.globalCompositeOperation = 'source-over'; } };
+const colorMats = {};
+{ const im = new Image(); im.onload = () => { const c = WORN.image, g = c.getContext('2d'); g.globalCompositeOperation = 'multiply'; g.drawImage(im, 0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over'; WORN.needsUpdate = true; }; im.src = 'tex/linen_albedo.jpg'; }
+const colorMat = c => colorMats[c] || (colorMats[c] = new THREE.MeshStandardMaterial({color:lin(c), map:WORN, ...LINEN, roughness:.86, envMapIntensity:.3}));
+function inkArt(img, inv){
+  if (!inv) return img;
+  return mk(img.naturalWidth || 400, img.naturalHeight || 400, (g, w, h) => { g.drawImage(img, 0, 0, w, h); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#f1e9d6'; g.fillRect(0, 0, w, h); });
+}
+function drawContain(g, img, x, y, w, h, top){
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw) return;
+  const k = Math.min(w/iw, h/ih), dw = iw*k, dh = ih*k;
+  g.drawImage(img, x + (w - dw)/2, top ? y : y + (h - dh)/2, dw, dh);
+}
+const coverCache = {};
+function coverMat(b){
+  const key = b.color + '|' + b.art + '|' + (b.no % 4);
+  if (coverCache[key]) return coverCache[key];
+  const c = mk(320, 560, (g, w, h) => {
+    g.fillStyle = b.color; g.fillRect(0, 0, w, h);
+    drawContain(g, inkArt(ARTS[b.art-1], b.inv), w*.08, h*.06, w*.84, h*.56, true);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, 5, h);
+    linenOn(g, w, h); ageOn(g, w, h, b.no*13 + b.ci*101);
+  });
+  const t = SRGB(new THREE.CanvasTexture(c)); t.anisotropy = 4;
+  return coverCache[key] = new THREE.MeshStandardMaterial({map:t, ...LINEN, roughness:.8, envMapIntensity:.35});
+}
+function spineMat(b, wWorld, hWorld){
+  if (!b.mark) return colorMat(b.color);   // 책등에는 문양만
+  const H = 512, W = Math.max(12, Math.min(140, Math.round(H * wWorld / hWorld)));
+  const c = mk(W, H, g => {
+    g.fillStyle = b.color; g.fillRect(0, 0, W, H);
+    const z = W*.8; drawContain(g, inkArt(ARTS[b.art-1], b.inv), (W - z)/2, H*.05, z, z, true);
+    linenOn(g, W, H); ageOn(g, W, H, b.no*7 + b.ci*31);
+  });
+  const t = SRGB(new THREE.CanvasTexture(c)); t.anisotropy = 4;
+  const m = new THREE.MeshStandardMaterial({map:t, ...LINEN, roughness:.82, envMapIntensity:.35}); m.userData.own = true;
+  return m;
+}
+
+const CW = 3.4, CH = 3.1, CD = .44, FT = .07, BASE = .16;
+const PH = (CH - FT - BASE) / 4;
+const PLACES = [
+  {pos:[0, 0, -7.76], ry:0}, {pos:[-4.76, 0, -5.6], ry:Math.PI/2}, {pos:[-4.76, 0, -1.0], ry:Math.PI/2},
+  {pos:[4.76, 0, -5.6], ry:-Math.PI/2}, {pos:[4.76, 0, -1.0], ry:-Math.PI/2}
+];
+// 서가를 왼쪽→오른쪽으로 도는 순서 (방 안에서 볼 때): 왼쪽 앞 · 왼쪽 뒤 · 가운데 · 오른쪽 뒤 · 오른쪽 앞
+const RING = [2, 1, 0, 3, 4];
+const sideCase = (ci, d) => { const i = RING.indexOf(ci) + d; return i >= 0 && i < RING.length ? RING[i] : -1; };
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+/* 반투명 유리: 뒤에 있는 책 색이 흐릿하게 번져 비침 (transmission + 거칠기 = 젖빛 유리) */
+const panelTex = (f, r) => { const t = TL.load(`tex/glass2_${f}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(r, r); return t; };
+// 선반 유리: 투명도를 줄여 우윳빛 젖빛 유리로 (책 색은 은은하게만 비침)
+const GLASS = new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.72, roughness:.55, thickness:.06, ior:1.5, metalness:0,
+  roughnessMap:panelTex('rough', 1.5), normalMap:panelTex('normal', 1.5), normalScale:new THREE.Vector2(.35, .35), clearcoat:.4, clearcoatRoughness:.2, envMapIntensity:1});
+const FROST = new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.6, roughness:.7, thickness:.06, ior:1.5, metalness:0,
+  roughnessMap:panelTex('rough', 2), normalMap:panelTex('normal', 2), normalScale:new THREE.Vector2(.3, .3), envMapIntensity:.8});
+// 칸막이·선반: 같은 유리 질감을 쓰되 거의 불투명한 흰 판 (모서리로만 빛이 살짝 비침)
+// 옆판·선반: 반투명 젖빛 유리 판 (뒤의 빛과 책 색이 번져 비침)
+const PANEL = new THREE.MeshPhysicalMaterial({color:0xffffff, transmission:.94, roughness:.42, thickness:.03, ior:1.5, metalness:0,
+  roughnessMap:panelTex('rough', 1), normalMap:panelTex('normal', 1), normalScale:new THREE.Vector2(.3, .3), clearcoat:.5, clearcoatRoughness:.25, envMapIntensity:1.1});
+// 뒤판: 안쪽에서 빛을 내는 젖빛 패널 (가운데가 가장 밝게)
+const BACKLIT = new THREE.MeshStandardMaterial({color:lin(0xf4f2ee), roughness:.9, emissive:lin(0xfff6ea), emissiveIntensity:3.4,
+  emissiveMap:new THREE.CanvasTexture(mk(64, 256, (g, w, h) => { const gr = g.createRadialGradient(w/2, h*.5, 4, w/2, h*.5, h*.62); gr.addColorStop(0, '#ffffff'); gr.addColorStop(1, '#b9b4ac'); g.fillStyle = gr; g.fillRect(0, 0, w, h); })),
+  roughnessMap:panelTex('rough', 1)});
+// 서가 뒤 벽에 번지는 빛
+const HALO = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false,
+  map:new THREE.CanvasTexture(mk(256, 256, (g, w) => { const gr = g.createRadialGradient(w/2, w/2, w*.18, w/2, w/2, w*.5); gr.addColorStop(0, 'rgba(255,246,232,.9)'); gr.addColorStop(1, 'rgba(255,246,232,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); }))});
+const POOL = new THREE.MeshBasicMaterial({transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false, opacity:.32,
+  map:new THREE.CanvasTexture(mk(256, 256, (g, w) => { const gr = g.createRadialGradient(w/2, 0, 0, w/2, 0, w*.62); gr.addColorStop(0, 'rgba(255,244,228,1)'); gr.addColorStop(1, 'rgba(255,244,228,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); }))});
+const EDGE = new THREE.LineBasicMaterial({color:lin(0xc4ccc9), transparent:true, opacity:.7});
+const SHELF_MAT = new THREE.MeshStandardMaterial({...pbr('shelf', 1.2, 1.2, {ns:.8}), envMapIntensity:.45});
+const SHELF_BACK = new THREE.MeshStandardMaterial({...pbr('shelf', 3, 3, {ns:.5}), color:lin(0xe4e0d8), envMapIntensity:.3});
+const cases = CATS.map((cat, ci) => {
+  const g = new THREE.Group(); g.userData.cat = ci;
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+  // 반투명 유리 서가: 판은 그림자를 만들지 않고, 모서리만 가는 선으로 살림
+  /* 첨부 이미지 같은 모듈 서가: 얇은 흰 판 칸막이(위로 살짝 솟음) + 빛이 비치는 반투명 뒤판 + 얇은 흰 선반 */
+  const FIN = .022, SH = .02, RISE = 0, MODS = 1;          // 판 두께, 선반 두께, 칸막이가 위로 솟는 높이, 한 서가의 칸 수
+  const fin = (x) => { const m = add(new THREE.BoxGeometry(FIN, CH + RISE, CD + .04), PANEL, x, (CH + RISE)/2, .02); m.castShadow = false; return m; };
+  for (let i = 0; i <= MODS; i++) fin(-CW/2 + FIN/2 + i*(CW - FIN)/MODS);
+  // 뒤판: 반투명 (빛이 칸 안으로 번짐)
+  const back = add(new THREE.BoxGeometry(CW - FIN*2, CH, .015), BACKLIT, 0, CH/2, -CD/2 + .008); back.castShadow = false;
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(CW + 2.2, CH + 2.2), HALO); halo.position.set(0, CH/2 + .1, -CD/2 - .2); g.add(halo);
+  // 책 사이로 새어 나오는 빛: 위·아래 두 곳에서 칸 안과 앞쪽을 비춤
+  [CH*.72, CH*.28].forEach(y => { const glow = new THREE.PointLight(lin(0xfff3e2), 3.4, 4.2, 1.6); glow.position.set(0, y, -CD/2 + .1); g.add(glow); });
+  // 서가 앞 바닥에 번지는 빛 웅덩이
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(CW + 1.6, 2.4), POOL); pool.rotation.x = -Math.PI/2; pool.position.set(0, .004, CD/2 + .7); pool.renderOrder = 2; pool.raycast = () => {}; g.add(pool);
+  // 선반: 맨 아래 받침 + 세 단, 칸막이 사이에만
+  const modW = (CW - FIN)/MODS - FIN;
+  for (let i = 0; i < MODS; i++){
+    const cx = -CW/2 + FIN + modW/2 + i*(CW - FIN)/MODS;
+    add(new THREE.BoxGeometry(modW, SH*1.6, CD + .04), PANEL, cx, BASE - SH*.8, .02).castShadow = false;
+    add(new THREE.BoxGeometry(modW, FIN, CD + .04), PANEL, cx, CH - FIN/2, .02).castShadow = false;   // 맨 위 덮개: 옆판과 같은 두께·깊이로 앞선을 맞춤
+    for (let k = 1; k < 4; k++) add(new THREE.BoxGeometry(modW, SH, CD), PANEL, cx, BASE + k*PH - SH/2, 0).castShadow = false;
+  }
+  const usable = CW - 2*FT - .04;
+  const shelves = cat.shelves.map((sh, si) => {
+    const y0 = BASE + (3 - si)*PH + .018, scale = usable / sh.sum;
+    let x = -CW/2 + FT + .02;
+    const its = sh.books.map(b => {
+      const it = { b, x, bw:b.w*scale*.96, gap:(b.w + 1)*scale, bh:b.h*(PH - .1), dep:.3 + (b.no % 5)*.012 };
+      it.cx = x + it.bw/2; it.cz = -CD/2 + .03 + it.dep/2; x += it.gap; return it;
+    });
+    return { y0, items:its, left:-CW/2 + FT + .02, usable };
+  });
+  const total = shelves.reduce((a, sh) => a + sh.items.length, 0);
+  const inst = new THREE.InstancedMesh(boxGeo, new THREE.MeshStandardMaterial({map:WORN, ...LINEN, roughness:.86}), total);
+  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color();
+  let idx = 0;
+  shelves.forEach(sh => sh.items.forEach(it => {
+    P.set(it.cx, sh.y0 + it.bh/2, it.cz); S.set(it.bw, it.bh, it.dep);
+    M.compose(P, q, S); inst.setMatrixAt(idx, M); inst.setColorAt(idx, C.set(it.b.color).convertSRGBToLinear()); idx++;
+  }));
+  inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+  inst.castShadow = true; inst.receiveShadow = true; g.add(inst);
+  const drawPlate = (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.fillStyle = '#2a2826'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '500 116px "Pretendard","Apple SD Gothic Neo", sans-serif'; c.fillText(cat.name, w/2, h*.42);
+    c.globalAlpha = .65; c.font = '500 32px "Pretendard","Apple SD Gothic Neo", sans-serif';
+    c.fillText(`${pad(ci+1)}  ·  ${cat.en}  ·  ${cat.count}권`, w/2, h*.86); c.globalAlpha = 1;
+  };
+  const plateCanvas = mk(1024, 256, drawPlate);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.2, .55), new THREE.MeshBasicMaterial({map:SRGB(new THREE.CanvasTexture(plateCanvas)), transparent:true, depthWrite:false}));
+  plate.position.set(0, CH + RISE + .4, -CD/2 + .04); plate.visible = false;   // 서가 위 이름판은 쓰지 않음
+  plate.userData.redraw = () => { drawPlate(plateCanvas.getContext('2d'), 1024, 256); plate.material.map.needsUpdate = true; };
+  add(new THREE.BoxGeometry(.62, .9, .62), new THREE.MeshStandardMaterial({...pbr('wall2', .5, .7, {ns:.5, gray:1}), color:STONE_GRAY}), 2.25, .45, .75);
+  // 백자 달항아리: 위아래를 따로 빚어 붙인 듯 살짝 어긋난 둥근 몸
+  const pts = [[0,0],[.11,0],[.12,.012],[.15,.05],[.22,.12],[.268,.21],[.272,.25],[.262,.3],[.225,.38],[.17,.45],[.13,.49],[.122,.515],[.135,.525],[.128,.535],[0,.535]].map(([r, y]) => new THREE.Vector2(r, y));
+  const jarM = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), new THREE.MeshPhysicalMaterial({color:lin(0xf2eee5), roughness:.22, clearcoat:.7, clearcoatRoughness:.12, envMapIntensity:1.1}));
+  jarM.scale.set(1, 1, .97); jarM.position.set(2.25, .9, .75); jarM.castShadow = true; g.add(jarM);
+  const P0 = PLACES[ci];
+  g.position.set(...P0.pos); g.rotation.y = P0.ry; scene.add(g);
+  const n = new THREE.Vector3(Math.sin(P0.ry), 0, Math.cos(P0.ry));
+  return { ci, g, inst, shelves, plate, pos:g.position.clone(), n, detail:null, books:null };
+});
+
+const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .26, 40), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.7, depthWrite:false}));
+ring.rotation.x = -Math.PI/2; ring.visible = false; scene.add(ring);
+
+/* 카메라 */
+const state = { pos:new THREE.Vector3(0, 1.6, -3.2), yaw:0, pitch:-.02 };   // 첫 화면: 가운데 서가가 화면을 채우고 양옆 서가가 감싸도록
+const goal  = { pos:state.pos.clone(), yaw:0, pitch:-.03 };
+let flight = null;
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+const yawTo = (from, to) => Math.atan2(-(to.x - from.x), -(to.z - from.z));
+const clampPos = v => { v.x = Math.max(-3.6, Math.min(3.6, v.x)); v.z = Math.max(-6.3, Math.min(2.4, v.z)); v.y = 1.6; return v; };
+const easeIO = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
+function flyTo(pos, yaw, pitch, dur, done){
+  goal.pos.copy(pos); goal.yaw = state.yaw + wrapA(yaw - state.yaw); goal.pitch = pitch;
+  flight = { from:{pos:state.pos.clone(), yaw:state.yaw, pitch:state.pitch}, t:0, dur: reduce ? .01 : dur, done };
+}
+function browsePose(ci){
+  const C = cases[ci], tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+  const d = Math.max(2.15 / tanV, 2.0 / (tanV * camera.aspect));
+  const pos = C.pos.clone().addScaledVector(C.n, d).setY(1.82);
+  return { pos, yaw:yawTo(pos, C.pos), pitch:-.07 };
+}
+tryPending = function tryPendingHold(ci){
+  if (!pendingHold || pendingHold.ci !== ci) return;
+  const C = cases[ci];
+  if (!C.books){ setTimeout(() => tryPending(ci), 120); return; }
+  const bk = C.books.find(x => x.it.b === pendingHold.b); pendingHold = null;
+  if (bk) holdBook(bk);
+};
+enterCase = ci => {
+  if (held) releaseBook(true);
+  tip.classList.remove('on'); ring.visible = false; help.classList.add('off');
+  const from = cur; cur = ci;
+  artsReady.then(() => { if (cur === ci) buildDetail(ci); });
+  if (from >= 0 && from !== ci) setTimeout(() => dropDetail(from), 1900);
+  const P = browsePose(ci), dist = state.pos.distanceTo(P.pos);
+  mode = 'flying'; canvas.classList.add('browse');
+  show(roamUI, false); show(browseUI, false); hold.classList.add('off');
+  flyTo(P.pos, P.yaw, P.pitch, Math.min(3.2, 1.5 + dist*.11), () => { mode = 'browse'; show(browseUI, true); tryPending(ci); });
+  $('crumb').innerHTML = `<small>(${ci+1}) 서가 · ${CATS[ci].count}권</small>${CATS[ci].name}`;
+  $('prevCase').disabled = sideCase(ci, -1) < 0; $('nextCase').disabled = sideCase(ci, 1) < 0;
+};
+function leaveCase(){
+  if (cur < 0) return;
+  if (held) releaseBook(true);
+  const C = cases[cur], ci = cur;
+  const pos = clampPos(C.pos.clone().addScaledVector(C.n, 3.3));
+  mode = 'flying'; hover = null; show(browseUI, false);
+  flyTo(pos, yawTo(pos, C.pos), -.03, 1.6, () => { mode = 'roam'; canvas.classList.remove('browse'); show(roamUI, true); dropDetail(ci); });
+  cur = -1;
+}
+$('leave').onclick = leaveCase;
+const goSide = d => { if (cur < 0) return; const n = sideCase(cur, d); if (n >= 0) enterCase(n); };
+$('prevCase').onclick = () => goSide(-1);
+$('nextCase').onclick = () => goSide(1);
+
+function buildDetail(ci){
+  const C = cases[ci]; if (C.detail) return;
+  const grp = new THREE.Group(); C.books = [];
+  C.shelves.forEach((sh, si) => sh.items.forEach((it, bi) => {
+    const b = it.b;
+    const cm = colorMat(b.color);
+    const m = new THREE.Mesh(BOOK_PAGES, paperMat);
+    const part = (geo, mat, x, z) => { const p = new THREE.Mesh(geo, mat); p.position.set(x, 0, z); m.add(p); };
+    part(BOOK_BOARD, cm, .465, 0);                                          // 뒤표지
+    part(BOOK_BOARD, [cm, coverMat(b), cm, cm, cm, cm], -.465, 0);          // 앞표지 (문양)
+    part(BOOK_SPINE, [cm, cm, cm, cm, spineMat(b, it.bw, it.bh), cm], 0, .4825);   // 책등
+    m.position.set(it.cx, sh.y0 + it.bh/2, it.cz); m.scale.set(it.bw, it.bh, it.dep);
+    grp.add(m); C.books.push({ m, it, si, bi, t:0 });
+  }));
+  C.g.add(grp); C.detail = grp; C.inst.visible = false;
+}
+function dropDetail(ci){
+  const C = cases[ci]; if (!C.detail || ci === cur) return;
+  C.detail.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { if (m.userData.own){ m.map.dispose(); m.dispose(); } }); });
+  C.g.remove(C.detail); C.detail = null; C.books = null; C.inst.visible = true;
+}
+
+let heldRot = {x:0, y:0}, heldRotT = {x:0, y:0};
+const ndc = new THREE.Vector2(), ray = new THREE.Raycaster();
+const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler(), planeN = new THREE.Plane();
+function pointerOnCase(ci){
+  const C = cases[ci];
+  planeN.setFromNormalAndCoplanarPoint(C.n, C.pos.clone().addScaledVector(C.n, CD/2));
+  if (!ray.ray.intersectPlane(planeN, tmpV)) return null;
+  return C.g.worldToLocal(tmpV.clone());
+}
+function hoverFrom(local){
+  if (!local) return null;
+  const si = 3 - Math.floor((local.y - BASE) / PH);
+  if (si < 0 || si > 3 || Math.abs(local.x) > CW/2 - FT) return null;
+  const its = cases[cur].shelves[si].items;
+  for (let i = 0; i < its.length; i++){
+    const it = its[i];
+    if (local.x < it.x + it.gap || i === its.length - 1) return { si, f: i + Math.max(0, Math.min(1, (local.x - it.x)/it.gap)) };
+  }
+  return null;
+}
+holdBook = bk => {
+  held = bk; heldRot = {x:0, y:-1.2}; heldRotT = {x:0, y:0};
+  const b = bk.it.b, cat = CATS[b.ci];
+  hold.innerHTML = `<div class="hk"><span>( ${cat.name} · ${b.sub} )${b.sale ? '' : '<span class="tag">미판매 균주</span>'}</span></div>
+    <div class="hn">${pad(b.no, 3)}</div>
+    <h3>${b.rec.maker}</h3>
+    <p class="hd">${describe(b)}</p>
+    <div class="tz" aria-label="맛 세기">${TASTES.map((t, i) => `<div class="${strongOf(b).includes(t) ? 'on' : ''}">${t}<b>${b.taste[i]}</b></div>`).join('')}</div>
+    <dl><dt>의뢰인</dt><dd>${b.rec.client}</dd>
+      <dt>최초 제작자</dt><dd>${b.rec.maker}</dd>
+      <dt>식품 종류</dt><dd>${cat.name}</dd>
+      <dt>강한 맛</dt><dd>${strongOf(b).join(' · ')}</dd>
+      <dt>고유번호</dt><dd>${b.rec.id}</dd></dl>
+    <div class="ha">${b.sale ? `<button class="act" id="toShop">균주 구매하기</button><span class="price">${won(b.price)}부터</span>` : '<span class="nosale"><b>미판매 균주</b><small>최초 제작자가 균주 판매를 허가하지 않았어요</small></span>'}
+      <span class="pn"><button id="hPrev" aria-label="옆 책">←</button><button id="hNext" aria-label="옆 책">→</button></span></div>`;
+  $('hPrev').onclick = e => { e.stopPropagation(); stepHeld(-1); };
+  $('hNext').onclick = e => { e.stopPropagation(); stepHeld(1); };
+  if (b.sale) $('toShop').onclick = e => { e.stopPropagation(); openShop(b); };
+  hold.classList.remove('off'); $('uHint').classList.add('off'); show([$('crumb'), $('leave'), $('uArrows')], false);
+};
+function releaseBook(quiet){
+  held = null; hold.classList.add('off');
+  if (mode === 'browse') show([$('crumb'), $('leave'), $('uArrows')], true);
+  if (!quiet && mode === 'browse') $('uHint').classList.remove('off');
+}
+function stepHeld(d){
+  if (!held) return;
+  const row = cases[cur].books.filter(x => x.si === held.si);
+  holdBook(row[(held.bi + d + row.length) % row.length]);
+}
+
+/* 입력 */
+let down = null, dragged = false;
+function setNdc(e){ const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left)/r.width*2 - 1, -(e.clientY - r.top)/r.height*2 + 1); ray.setFromCamera(ndc, camera); }
+function roamHit(){
+  const h = ray.intersectObjects([...cases.map(c => c.g), floor], true)[0];
+  if (!h) return null;
+  let o = h.object; while (o && o.userData.cat === undefined && !o.userData.floor) o = o.parent;
+  return o ? { cat:o.userData.cat, floor:!!o.userData.floor, point:h.point } : null;
+}
+canvas.addEventListener('pointerdown', e => { down = {x:e.clientX, y:e.clientY, yaw:goal.yaw, pitch:goal.pitch}; dragged = false; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  setNdc(e);
+  if (mode === 'browse'){
+    if (held){ heldRotT.y = ndc.x*1.05; heldRotT.x = -ndc.y*.3; return; }
+    hover = hoverFrom(pointerOnCase(cur)); canvas.classList.toggle('point', !!hover); return;
+  }
+  if (mode !== 'roam') return;
+  if (down){
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    if (!dragged && Math.hypot(dx, dy) > 5){ dragged = true; canvas.classList.add('drag'); tip.classList.remove('on'); ring.visible = false; }
+    if (dragged){ goal.yaw = down.yaw + dx*.0042; goal.pitch = Math.max(-.6, Math.min(.5, down.pitch + dy*.0032)); }
+    return;
+  }
+  const h = roamHit();
+  canvas.classList.toggle('point', !!(h && h.cat !== undefined));
+  if (h && h.cat !== undefined){
+    tip.innerHTML = `<b>${CATS[h.cat].name} 서가</b>${CATS[h.cat].count}권 · 눌러서 다가가기`;
+    tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.classList.add('on'); ring.visible = false;
+  } else {
+    tip.classList.remove('on');
+    if (h && h.floor){ ring.visible = true; ring.position.set(h.point.x, .02, h.point.z); } else ring.visible = false;
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  const wasDrag = dragged; down = null; dragged = false; canvas.classList.remove('drag');
+  if (wasDrag) return;
+  setNdc(e);
+  if (mode === 'browse'){
+    if (held){ releaseBook(); return; }
+    const h = hoverFrom(pointerOnCase(cur));
+    if (h){ const row = cases[cur].books.filter(x => x.si === h.si); holdBook(row[Math.min(row.length - 1, Math.floor(h.f))]); }
+    return;
+  }
+  if (mode !== 'roam') return;
+  help.classList.add('off');
+  const h = roamHit(); if (!h) return;
+  if (h.cat !== undefined) enterCase(h.cat);
+  else if (h.floor) goal.pos.copy(clampPos(h.point.clone()));
+});
+canvas.addEventListener('pointerleave', () => { tip.classList.remove('on'); ring.visible = false; if (mode === 'browse') hover = null; });
+let wheelLock = 0;
+canvas.addEventListener('wheel', e => {
+  if (mode !== 'browse' || held) return;
+  e.preventDefault();
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY, now = performance.now();
+  if (Math.abs(d) < 14 || now < wheelLock) return;
+  wheelLock = now + 1200;
+  goSide(d > 0 ? 1 : -1);
+}, {passive:false});
+addEventListener('keydown', e => {
+  if (view !== 'archive') return;
+  if (mode === 'browse'){
+    if (e.key === 'Escape'){ held ? releaseBook() : leaveCase(); }
+    if (e.key === 'ArrowRight'){ held ? stepHeld(1) : goSide(1); }
+    if (e.key === 'ArrowLeft'){ held ? stepHeld(-1) : goSide(-1); }
+    return;
+  }
+  if (mode !== 'roam') return;
+  const f = new THREE.Vector3(-Math.sin(goal.yaw), 0, -Math.cos(goal.yaw));
+  if (e.key === 'ArrowUp' || e.key === 'w')   clampPos(goal.pos.addScaledVector(f, 1.3));
+  if (e.key === 'ArrowDown' || e.key === 's') clampPos(goal.pos.addScaledVector(f, -1.3));
+  if (e.key === 'ArrowLeft' || e.key === 'a')  goal.yaw += .3;
+  if (e.key === 'ArrowRight' || e.key === 'd') goal.yaw -= .3;
+});
+resize = () => {
+  const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  if (mode === 'browse' && cur >= 0){ const P = browsePose(cur); goal.pos.copy(P.pos); }
+};
+addEventListener('resize', resize); resize();
+
+/* 매 프레임 */
+const invQ = new THREE.Quaternion(), camF = new THREE.Vector3(), camR = new THREE.Vector3(), tgtP = new THREE.Vector3(), tgtS = new THREE.Vector3(), tgtQ = new THREE.Quaternion(), yAxis = new THREE.Vector3(0,1,0);
+function layoutBooks(C, k){
+  C.g.updateMatrixWorld(); invQ.copy(C.g.quaternion).invert();
+  const rows = [[], [], [], []];
+  C.books.forEach(bk => rows[bk.si].push(bk));
+  rows.forEach((row, si) => {
+    const sh = C.shelves[si]; let sum = 0;
+    const vis = row.map((bk, i) => {
+      let tt = 0;
+      if (bk === held) tt = 1;
+      else if (hover && hover.si === si && !held) tt = smooth(Math.max(0, 1 - Math.abs(i + .5 - hover.f)/1.35));
+      bk.t += (tt - bk.t) * k(.11);
+      const a = bk.t*Math.PI/2, S = 1 + bk.t*.8;
+      const v = bk === held ? bk.it.bw*1.6 : bk.it.bw*Math.cos(a) + bk.it.dep*S*Math.sin(a);
+      sum += v + (bk.it.gap - bk.it.bw); return v;
+    });
+    const q = Math.min(1, sh.usable / sum);
+    let x = sh.left;
+    row.forEach((bk, i) => {
+      const it = bk.it, a = bk.t*Math.PI/2, S = 1 + bk.t*.8;
+      const cx = x + vis[i]*q/2; x += (vis[i] + it.gap - it.bw)*q;
+      if (bk === held){
+        camF.set(0, 0, -1).applyQuaternion(camera.quaternion); camR.set(1, 0, 0).applyQuaternion(camera.quaternion);
+        const narrow = camera.aspect < .9;
+        tgtP.copy(camera.position).addScaledVector(camF, 1.3).addScaledVector(camR, narrow ? 0 : -.42);   // 오른쪽 기록면을 비켜 왼쪽에
+        if (narrow) tgtP.y += .3;
+        const kk = .78 / it.bh;
+        tgtS.set(Math.max(it.bw, .045)*kk, it.bh*kk, it.dep*kk);
+        heldRot.x += (heldRotT.x - heldRot.x)*k(.08); heldRot.y += (heldRotT.y - heldRot.y)*k(.08);
+        tmpE.set(heldRot.x + .22, Math.PI/2 + heldRot.y + .85, 0, 'YXZ');   // 앞표지와 함께 종이 쪽(앞마구리)·윗면이 보이게 살짝 돌리고 숙임
+        tgtQ.copy(camera.quaternion).multiply(tmpQ.setFromEuler(tmpE));
+        C.g.worldToLocal(tgtP); tgtQ.premultiply(invQ);
+      } else {
+        tgtP.set(cx, sh.y0 + it.bh*S/2 + bk.t*.03, it.cz + bk.t*.34);
+        tgtS.set(it.bw*q, it.bh*S, it.dep*S*q);
+        tgtQ.setFromAxisAngle(yAxis, a);
+      }
+      const kp = bk === held || bk.m.userData.away ? k(.12) : k(.35);
+      bk.m.position.lerp(tgtP, kp); bk.m.quaternion.slerp(tgtQ, kp); bk.m.scale.lerp(tgtS, kp);
+      bk.m.userData.away = bk === held || bk.m.position.distanceToSquared(tgtP) > .0004;
+    });
+  });
+}
+let last = performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  now = now || performance.now();
+  const dt = Math.min(.1, (now - last)/1000); last = now;
+  if (view !== 'archive') return;                               // 접수실에 있을 땐 서고를 그리지 않음
+  const k = r => reduce ? 1 : 1 - Math.pow(1 - r, dt*60);
+  if (flight){
+    flight.t = Math.min(1, flight.t + dt/flight.dur);
+    const e = easeIO(flight.t);
+    state.pos.lerpVectors(flight.from.pos, goal.pos, e);
+    state.pos.y += Math.sin(e*Math.PI)*.12;
+    state.yaw = flight.from.yaw + (goal.yaw - flight.from.yaw)*e;
+    state.pitch = flight.from.pitch + (goal.pitch - flight.from.pitch)*e;
+    if (flight.t >= 1){ const d = flight.done; flight = null; d && d(); }
+  } else {
+    state.pos.lerp(goal.pos, k(.055));
+    state.yaw += (goal.yaw - state.yaw)*k(.09);
+    state.pitch += (goal.pitch - state.pitch)*k(.09);
+  }
+  camera.position.copy(state.pos);
+  if (mode === 'roam') camera.position.y += Math.sin(now/900)*.006;
+  camera.rotation.set(state.pitch, state.yaw, 0);
+  camera.updateMatrixWorld();
+  if (ring.visible) ring.material.opacity = .5 + Math.sin(now/260)*.2;
+  cases.forEach(C => {
+    if (C.books) layoutBooks(C, k);
+    const o = (mode !== 'roam' && C.ci === cur) ? 0 : 1;
+    C.plate.material.opacity += (o - C.plate.material.opacity) * k(.08);
+  });
+  renderer.render(scene, camera);
+})();
+if (document.fonts) document.fonts.load('700 116px "Noto Sans KR"').then(() => cases.forEach(C => C.plate.userData.redraw())).catch(() => {});
+}
+
+
+
+/* ════════════════ 균주 구매 ════════════════ */
+const shop = $('shop');
+const SIZES = [{n:'배추 10포기', k:1, d:'2~3인 가족 김장 · 약 25kg'}, {n:'배추 20포기', k:1.8, d:'4인 가족 김장 · 약 50kg'}, {n:'배추 30포기', k:2.5, d:'대가족 김장 · 약 75kg'}];
+let shopB = null, qty = 1;
+function shopTotal(){
+  const si = +(shop.querySelector('input[name="sz"]:checked') || {value:0}).value;
+  const sub = Math.round(shopB.price*SIZES[si].k/100)*100*qty, ship = sub >= 100000 ? 0 : 3000;
+  return { si, sub, ship, tot: sub + ship };
+}
+function renderTotal(){
+  const t = shopTotal();
+  $('sBill').innerHTML = `<p><span>${SIZES[t.si].n} × ${qty}</span><span>${won(t.sub)}</span></p><p><span>냉장 배송${t.ship ? '' : ' (10만 원 이상 무료)'}</span><span>${won(t.ship)}</span></p><p class="tt"><span>합계</span><b>${won(t.tot)}</b></p>`;
+  $('qtyOut').textContent = qty;
+}
+function openShop(b){
+  shopB = b; qty = 1;
+  const cat = CATS[b.ci];
+  shop.innerHTML = `<div class="in">
+    <div class="lft">
+      <div class="stile${b.inv ? ' inv' : ''}" style="--bc:${b.color}"><i></i><img src="art/${pad(b.art)}.png" alt="가인 ${pad(b.art)}"></div></div>
+    <div class="rgt">
+      <form id="shopForm" novalidate>
+        <h2 tabindex="-1" style="outline:none">${b.rec.maker}의 ${b.sub}</h2>
+        <p class="lead">${b.rec.years}년 이어 온 ${b.sub}의 균주예요. ${cat.name} 서가 ${b.si+1}칸에 보관 중이며, 냉장으로 보내 드려요.</p>
+        <dl class="facts"><div><dt>갈래</dt><dd>${cat.name} · ${b.sub}</dd></div><div><dt>고유번호</dt><dd>${b.rec.id}</dd></div><div><dt>가인</dt><dd>家印 ${pad(b.art)}</dd></div><div><dt>강한 맛</dt><dd>${strongOf(b).join(' · ')}</dd></div></dl>
+        <div class="sec"><span class="sl">(1) 용량</span><div class="sc ch" role="radiogroup" aria-label="용량">${SIZES.map((z, i) => `<label><input type="radio" name="sz" value="${i}" ${i ? '' : 'checked'}><span><span>${z.n}<small>${z.d}</small></span><em>${won(Math.round(b.price*z.k/100)*100)}</em></span></label>`).join('')}</div></div>
+        <div class="sec"><span class="sl">(2) 수량</span><div class="sc"><div class="qty"><button type="button" id="qMinus" aria-label="수량 줄이기">−</button><output id="qtyOut">1</output><button type="button" id="qPlus" aria-label="수량 늘리기">+</button></div></div></div>
+        <div class="sec"><label class="sl" for="sName">(3) 받는 분</label><div class="sc"><div class="two"><input id="sName" autocomplete="name" placeholder="이름" aria-label="이름"><input id="sTel" type="tel" autocomplete="tel" placeholder="010-0000-0000" aria-label="연락처"></div>
+          <input id="sAddr" autocomplete="street-address" placeholder="받을 주소" aria-label="주소" style="margin-top:10px"></div></div>
+        <div class="sec"><span class="sl">(4) 결제 방식</span><div class="sc ch row" role="radiogroup" aria-label="결제 방식">${['신용카드','계좌이체','간편결제'].map((q, i) => `<label><input type="radio" name="sp" value="${q}" ${i ? '' : 'checked'}><span>${q}</span></label>`).join('')}</div></div>
+        <div class="sec"><span class="sl">(5) 금액</span><div class="sc"><div class="sum" id="sBill"></div></div></div>
+        <p class="err" id="sErr" role="alert"></p>
+        <button type="submit" class="cta"><span>결제하기</span><i>→</i></button>
+        <p class="note">시제품 화면이라 실제 결제는 이루어지지 않아요.</p>
+      </form>
+    </div></div>
+    <button class="x" id="shopX" type="button">닫기 ✕</button>`;
+  shop.hidden = false; shop.scrollTop = 0;
+  renderTotal();
+  shop.querySelectorAll('input[name="sz"]').forEach(r => r.onchange = renderTotal);
+  $('qMinus').onclick = () => { qty = Math.max(1, qty - 1); renderTotal(); };
+  $('qPlus').onclick = () => { qty = Math.min(20, qty + 1); renderTotal(); };
+  $('shopX').onclick = closeShop;
+  $('shopForm').onsubmit = e => {
+    e.preventDefault();
+    const err = (m, id) => { $('sErr').textContent = m; $(id).focus(); };
+    if (!$('sName').value.trim()) return err('받는 분 이름을 적어 주세요.', 'sName');
+    if (!/^0\d{1,2}-?\d{3,4}-?\d{4}$/.test($('sTel').value.trim())) return err('연락처를 010-0000-0000 형식으로 적어 주세요.', 'sTel');
+    if (!$('sAddr').value.trim()) return err('받을 주소를 적어 주세요.', 'sAddr');
+    const t = shopTotal(), now = new Date(), ord = `OD-${mmdd(now)}-${String(Math.floor(Math.random()*9000) + 1000)}`;
+    const pm = shop.querySelector('input[name="sp"]:checked').value, who = $('sName').value.trim();
+    shop.querySelector('.rgt').innerHTML = `<div class="done"><h2>주문이 접수됐어요</h2>
+      <p class="lead">${who}님께 ${b.rec.maker}의 ${b.sub} 균주 ${SIZES[t.si].n}분 ${qty}개를 냉장으로 보내 드릴게요.</p>
+      <dl class="facts"><div><dt>주문번호</dt><dd>${ord}</dd></div><div><dt>결제 방식</dt><dd>${pm}</dd></div><div><dt>균주</dt><dd>${b.rec.id}</dd></div><div><dt>배송</dt><dd>2~3일 안</dd></div></dl>
+      <div class="sum"><p class="tt"><span>결제 금액</span><b>${won(t.tot)}</b></p></div>
+      <button class="cta" id="doneX" style="margin-top:clamp(30px,6vh,60px)"><span>서고로 돌아가기</span><i>→</i></button></div>`;
+    $('doneX').onclick = closeShop; $('doneX').focus();
+  };
+  setTimeout(() => shop.querySelector('h2').focus({preventScroll:true}), 30);
+}
+function closeShop(){ shop.hidden = true; shopB = null; }
+addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.stopImmediatePropagation(); closeShop(); } }, true);
+
+/* ════════════════ 찾아보기: 검색 · 갈래 · 강한 맛 · 구매 가능 ════════════════ */
+{
+  const find = $('find'), q = $('fdQ'), res = $('fdRes'), more = $('fdMore');
+  const st = { cats:new Set(), tastes:new Set(), sale:'all', limit:60 };
+  const hay = ALL.map(b => [b.rec.maker, b.rec.client, b.sub, CATS[b.ci].name, CATS[b.ci].en, b.rec.id, pad(b.no, 3), strongOf(b).join(' ')].join(' ').toLowerCase());
+  const tg = (el, items, on) => { el.innerHTML = items.map(([k, label, extra]) => `<button type="button" data-k="${k}" aria-pressed="false"${extra || ''}>${label}</button>`).join(''); el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.k); }; };
+  tg($('fdCat'), CATS.map((c, i) => [i, `<i></i>${c.name}`, ` style="--c:${c.c}"`]), k => { st.cats.has(+k) ? st.cats.delete(+k) : st.cats.add(+k); run(); });
+  tg($('fdTaste'), TASTES.map(t => [t, t]), k => { st.tastes.has(k) ? st.tastes.delete(k) : st.tastes.add(k); run(); });
+  tg($('fdSale'), [['all', '전체'], ['sale', '구매 가능한 균주'], ['no', '미판매']], k => { st.sale = k; run(); });
+  function match(){
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return ALL.filter((b, i) => (!st.cats.size || st.cats.has(b.ci))
+      && (st.sale === 'all' || (st.sale === 'sale') === b.sale)
+      && [...st.tastes].every(t => strongOf(b).includes(t))
+      && words.every(w => hay[i].includes(w)));
+  }
+  function run(keep){
+    if (!keep) st.limit = 60;
+    $('fdCat').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(st.cats.has(+b.dataset.k))));
+    $('fdTaste').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(st.tastes.has(b.dataset.k))));
+    $('fdSale').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(st.sale === b.dataset.k)));
+    const hits = match();
+    $('fdCount').textContent = `(${hits.length})`;
+    const nSale = hits.filter(b => b.sale).length;
+    $('fdSum').textContent = hits.length ? `구매 가능 ${nSale} · 미판매 ${hits.length - nSale}` : '';
+    res.innerHTML = hits.length ? hits.slice(0, st.limit).map(b => `<li><button type="button" data-i="${ALL.indexOf(b)}">
+        <span class="sw${b.inv ? ' inv' : ''}" style="--c:${b.color}"><img src="art/${pad(b.art)}.png" alt="" loading="lazy"></span>
+        <span class="no">${pad(b.no, 3)}</span>
+        <span class="tt">${b.rec.maker}의 ${b.sub}<small>${b.rec.id}</small></span>
+        <span class="ct">${CATS[b.ci].name} 서가 · ${b.si + 1}칸</span>
+        <span class="ts">${strongOf(b).join(' · ')}</span>
+        <span class="pr${b.sale ? '' : ' no-sale'}">${b.sale ? won(b.price) + '부터' : '미판매'}</span>
+        <span class="ar">→</span></button></li>`).join('') : '<li class="empty">맞는 기록이 없어요. 조건을 하나씩 풀어 보세요.</li>';
+    more.hidden = hits.length <= st.limit;
+    if (!more.hidden) more.textContent = `더 보기 (${hits.length - st.limit})`;
+  }
+  let tq; q.oninput = () => { clearTimeout(tq); tq = setTimeout(() => run(), 120); };
+  more.onclick = () => { st.limit += 60; run(true); };
+  res.onclick = e => {
+    const btn = e.target.closest('button[data-i]'); if (!btn) return;
+    const b = ALL[+btn.dataset.i];
+    closeFind();
+    pendingHold = { ci:b.ci, b }; enterCase(b.ci);          // 그 서가로 날아가 책을 꺼냄
+  };
+  function openFind(preset){
+    if (preset === 'sale') st.sale = 'sale';
+    help.classList.add('off'); find.hidden = false; run(); find.scrollTop = 0;
+    setTimeout(() => q.focus({preventScroll:true}), 30);
+  }
+  function closeFind(){ find.hidden = true; }
+  $('findBtn').onclick = () => openFind();
+  $('fdX').onclick = closeFind;
+  addEventListener('keydown', e => { if (!find.hidden && e.key === 'Escape'){ e.stopImmediatePropagation(); closeFind(); } }, true);
+  window.openFind = openFind;
+}
+
+
+/* ════════════════ 테스트: 우리 집 가인 점쳐보기 ════════════════ */
+{
+  const ROWS = ['세균', '젖산균', '효모', '곰팡이'];
+  const TASTE6 = ['신맛', '단맛', '화사한 맛', '감칠맛', '청량한 맛', '구수한 맛'];
+  // 획 사전: [학명, 갈래(줄), 맛(칸)]
+  const ST = {
+    b1:['Bacillus amyloliquefaciens',0,1], b2:['Bacillus licheniformis',0,3], b3:['Bacillus subtilis',0,5],
+    l1:['Weissella koreensis',1,0], l2:['Leuconostoc citreum',1,0], l3:['Lactobacillus sakei',1,0], l4:['Lactobacillus plantarum',1,0], l5:['Pediococcus pentosaceus',1,0],
+    l6:['Pediococcus pentosaceus',1,1], l7:['Tetragenococcus halophilus',1,3], l8:['Leuconostoc mesenteroides',1,4], l9:['Lactobacillus brevis',1,4], l10:['Leuconostoc mesenteroides',1,4],
+    y1:['Pichia kudriavzevii',2,0], y2:['Kazachstania exigua',2,1], y3:['Saccharomyces cerevisiae',2,1], y4:['Saccharomycopsis fibuligera',2,1],
+    y5:['Pichia fermentans',2,2], y6:['Saccharomyces cerevisiae',2,2], y7:['Zygosaccharomyces rouxii',2,3], y8:['Candida versatilis',2,5],
+    m1:['Rhizopus oryzae',3,1], m2:['Monascus purpureus',3,2], m3:['Aspergillus oryzae',3,3], m4:['Aspergillus sojae',3,3], m5:['Aspergillus kawachii',3,3]
+  };
+  // 실제 가인 18: [이미지, 갈래(CATS), 획 넷]
+  const MK = [
+    ['A1',0,['y5','l2','l3','l8']], ['A2',0,['l1','l5','l4','y6']], ['A3',0,['l1','l9','l10','y2']], ['A4',0,['l8','l2','l4','l6']],
+    ['B1',1,['l7','y8','b1','m4']], ['C3',1,['b1','y7','y8','l9']], ['E1',1,['m5','m1','m4','l7']],
+    ['B2',2,['m3','l7','y8','b3']], ['B3',2,['m3','l8','y8','b2']], ['C2',2,['b3','m3','l7','m4']],
+    ['B4',3,['y7','y3','m3','b3']], ['C1',3,['m3','y2','y8','m2']], ['C4',3,['b2','m2','y3','l7']], ['E2',3,['y8','m3','y6','b3']],
+    ['D1',4,['y1','y6','y5','m4']], ['D2',4,['m1','y1','y3','l4']], ['D3',4,['m3','y4','l9','l1']], ['D4',4,['y6','l4','l5','m5']]
+  ];
+  const short = n => n.replace(/^(\w)\w+ /, '$1. ');
+  // 질문 다섯
+  const Q = [
+    { t:'무엇을 담그나요?', d:'담그는 것에 따라 그 안에 사는 미생물의 무리가 달라져요.', k:'one',
+      o:CATS.map((c, i) => ({ l:c.name, c:c.c, food:i })) },
+    { t:'어디서 익히나요?', d:'익히는 자리의 온도와 공기가 어떤 미생물이 자랄지 정해요.', k:'one',
+      o:[ { l:'장독대 항아리', s:'바깥바람 · 햇볕', w:{row:{3:1.6, 0:1.6, 2:.5}} },
+          { l:'김치냉장고', s:'낮고 고른 온도', w:{row:{1:2.2}} },
+          { l:'부엌 · 베란다', s:'실온', w:{row:{2:2, 1:.5}} },
+          { l:'땅에 묻은 독', s:'서늘하고 일정함', w:{row:{1:1.5, 2:1}, taste:{4:1}} } ] },
+    { t:'얼마나 익혀서 먹나요?', d:'오래 익힐수록 천천히 자라는 미생물이 맛을 보태요.', k:'one',
+      o:[ { l:'갓 담가서', s:'며칠 안', w:{taste:{4:1.5}, row:{1:1}} },
+          { l:'2~3주', s:'알맞게 익을 때', w:{taste:{0:1.5}} },
+          { l:'몇 달', s:'충분히 삭을 때', w:{taste:{3:1}, row:{2:.5}} },
+          { l:'해를 넘겨', s:'묵은 맛', w:{taste:{5:1.5, 3:1}, row:{3:1, 0:1}} } ] },
+    { t:'꼭 들어가는 재료가 있나요?', d:'여러 개를 골라도 돼요. 재료에 붙어 들어오는 미생물이 있어요.', k:'many', o:null },   // 보기는 담그는 것에 따라 ING에서
+    { t:'어떤 맛이 먼저 느껴지나요?', d:'두 가지까지 골라 주세요.', k:'two',
+      o:TASTE6.map((t, i) => ({ l:t, w:{taste:{[i]:3}} })) }
+  ];
+  // 넣는 재료: 담그는 것마다 다르게 (그 음식에 사는 미생물로만 연결)
+  const ING = [
+    [ { l:'젓갈', s:'새우젓 · 멸치젓', w:{st:{l3:2, l5:1.5, l4:1}} }, { l:'찹쌀풀', s:'단맛', w:{st:{y2:2, l6:1.5}} },
+      { l:'무 · 배추', s:'시원한 맛', w:{st:{l8:2, l2:1.5, l1:1}} }, { l:'갓 · 쪽파', s:'알싸한 향', w:{st:{l9:1.5, l10:1.5}} },
+      { l:'배 · 사과', s:'화사한 단맛', w:{st:{y5:2, y6:1.5}} }, { l:'굴 · 생새우', s:'깊은 감칠맛', w:{st:{l3:1.5, l5:1}} } ],
+    [ { l:'메주', s:'장의 바탕', w:{st:{b1:2.5, m4:2}} }, { l:'굵은 소금', s:'짜게 오래', w:{st:{y7:2.5, l7:2, y8:1}} },
+      { l:'숯 · 대추 · 고추', s:'장 띄우기', w:{st:{y8:1.5, b1:1}} }, { l:'누룩 · 코지', s:'개량식', w:{st:{m5:2, m1:2}} },
+      { l:'묵은 씨간장', s:'대를 잇는 장', w:{st:{l7:2, y8:1.5, y7:1}} }, { l:'다시마 · 표고', s:'맛간장', w:{st:{l9:1.5, m4:1}} } ],
+    [ { l:'메주', s:'장의 바탕', w:{st:{b3:2.5, m3:2, b2:1}} }, { l:'볏짚', s:'메주 띄울 때', w:{st:{b3:2.5, b2:1.5}} },
+      { l:'굵은 소금', s:'짜게 오래', w:{st:{l7:2, y8:1.5}} }, { l:'간장 뜨고 남은 장', s:'막장 · 재래식', w:{st:{l7:1.5, m4:1.5}} },
+      { l:'삶은 콩 더 넣기', s:'청국장 · 쌈장', w:{st:{b3:2, b2:2}} }, { l:'보리 · 밀', s:'막장', w:{st:{m3:1.5, b2:1}} } ],
+    [ { l:'메줏가루', s:'장의 바탕', w:{st:{m3:2, b3:2, b2:1}} }, { l:'찹쌀 · 엿기름', s:'찹쌀고추장', w:{st:{y2:2, y3:2}} },
+      { l:'조청 · 물엿', s:'단맛', w:{st:{y3:1.5, y2:1.5}} }, { l:'매실청', s:'매실고추장', w:{st:{y6:2}} },
+      { l:'홍국쌀', s:'붉은 누룩', w:{st:{m2:3}} }, { l:'굵은 소금', s:'짜게 오래', w:{st:{y7:2.5, l7:1.5, y8:1}} } ],
+    [ { l:'누룩', s:'술의 시작', w:{st:{m1:2, m5:2, y4:2, y1:1}} }, { l:'고두밥', s:'쌀 · 찹쌀', w:{st:{y3:2, y4:1}} },
+      { l:'밀누룩', s:'구수한 맛', w:{st:{m4:2, m3:1.5}} }, { l:'복숭아 · 사과', s:'과일 막걸리', w:{st:{y5:2.5, y6:1.5}} },
+      { l:'덧술', s:'두 번 빚기', w:{st:{y3:1.5, y1:1.5, l9:1}} }, { l:'엿기름', s:'단맛', w:{st:{m1:1.5, y4:1}} } ]
+  ];
+  const opts = qi => qi === 3 ? ING[(ans[0] || [0])[0]] : Q[qi].o;
+  const LBL = ['담그는 것', '익히는 곳', '익히는 시간', '넣는 재료', '먼저 나는 맛'];
+  const lft = $('tLft'), form = $('tForm'), gainEl = $('gain');
+  let step = 0, ans = [];                     // step 0 = 시작, 1~5 = 질문, 6 = 결과
+  const POOL = CATS.map((_, ci) => new Set(MK.filter(m => m[1] === ci).flatMap(m => m[2])));
+
+  function steps(){
+    lft.innerHTML = `<div class="k"><span>( 테스트 )</span></div>
+      <ol class="steps">${LBL.map((l, i) => `<li class="${i + 1 === step ? 'on' : i + 1 < step ? 'done' : ''}">(${i + 1}) ${l}</li>`).join('')}</ol>
+      <div class="snum">${step ? pad(Math.min(step, 5)) + '<small>/05</small>' : ''}</div>`;
+  }
+  function start(){
+    step = 0; ans = []; steps();
+    form.innerHTML = `<div class="fs">
+      <h2>우리 집 가인 점쳐보기</h2>
+      <p class="lead">다섯 가지 질문에 답하면, 그 손맛에 살고 있을 미생물을 짐작해 어떤 획으로 새겨질지 보여드려요. 1분이면 충분해요.</p>
+      <div class="sec"><span class="sl">이런 가인이 나와요</span><div class="sc"><div class="tprev">${MK.filter((_, i) => i % 3 === 0).map(m => `<img src="gain/g_${m[0]}.png" alt="">`).join('')}</div></div></div>
+      <p class="err" aria-hidden="true"></p>
+      <button type="submit" class="cta"><span>시작하기</span><i>→</i></button></div>`;
+  }
+  function ask(n){
+    step = n; steps();
+    const q = Q[n - 1], cur = ans[n - 1] || [], multi = q.k !== 'one', qo = opts(n - 1);
+    form.innerHTML = `<div class="fs">
+      <h2>${q.t}</h2><p class="lead">${q.d}</p>
+      <div class="sec"><span class="sl">(${n}) ${LBL[n - 1]}</span><div class="sc ch${n === 1 ? ' sw' : ''}" role="${multi ? 'group' : 'radiogroup'}" aria-label="${LBL[n - 1]}">
+        ${qo.map((o, i) => `<label${o.c ? ` style="--c:${o.c}"` : ''}><input type="${multi ? 'checkbox' : 'radio'}" name="q" value="${i}"${cur.includes(i) ? ' checked' : ''}><span>${o.l}${o.s ? `<small>${o.s}</small>` : ''}</span></label>`).join('')}
+      </div></div>
+      <p class="err" id="tErr" role="alert"></p>
+      <button type="submit" class="cta"><span>${n < 5 ? '다음' : '결과 보기'}</span><i>→</i></button>
+      <div class="foot"><button type="button" class="ghost" id="tBack">${n > 1 ? '← 이전 질문' : '← 처음으로'}</button></div></div>`;
+    $('tBack').onclick = () => n > 1 ? ask(n - 1) : start();
+    if (q.k === 'two') limit2();
+    gainEl.scrollTop = 0;
+  }
+  function limit2(){
+    const boxes = [...form.querySelectorAll('input[name="q"]')];
+    const upd = () => { const n = boxes.filter(b => b.checked).length; boxes.forEach(b => b.closest('label').classList.toggle('off', n >= 2 && !b.checked)); };
+    boxes.forEach(b => b.onchange = upd); upd();
+  }
+  // 점수: 갈래 무리 + 익히는 곳·시간 + 재료 + 맛
+  function predict(){
+    const food = ans[0][0], sc = {}, why = {};
+    const add = (k, v, r, pr) => { sc[k] = (sc[k] || 0) + v; if (v >= .9){ (why[k] = why[k] || []).push([r, pr]); } };   // 이유: 재료 > 익히는 곳·시간 > 맛 > 갈래
+    Object.keys(ST).forEach(k => { sc[k] = POOL[food].has(k) ? 3 : 0; if (POOL[food].has(k)) why[k] = [[`${CATS[food].name}에 흔한 미생물`, 0]]; });
+    for (let qi = 1; qi < 5; qi++) (ans[qi] || []).forEach(oi => {
+      const o = opts(qi)[oi], w = o.w, r = qi === 3 ? `${josa(o.l, '을', '를')} 넣어서` : qi === 4 ? `${josa(o.l, '을', '를')} 골라서` : qi === 1 ? `${o.l}에서 익혀서` : oi === 0 ? '갓 담가 먹어서' : `${o.l} 익혀서`;
+      const pr = qi === 3 ? 3 : qi === 4 ? 1 : 2;
+      Object.keys(ST).forEach(k => {
+        if (w.row && w.row[ST[k][1]]) add(k, w.row[ST[k][1]] * (POOL[food].has(k) ? 1 : .5), r, pr);
+        if (w.taste && w.taste[ST[k][2]]) add(k, w.taste[ST[k][2]] * (POOL[food].has(k) ? 1 : .6), r, pr);
+        if (w.st && w.st[k]) add(k, w.st[k], r, pr);
+      });
+    });
+    const pick = [], names = new Set();
+    Object.keys(sc).filter(k => POOL[food].has(k)).sort((a, b) => sc[b] - sc[a]).forEach(k => { if (pick.length < 4 && !names.has(ST[k][0])){ pick.push(k); names.add(ST[k][0]); } });
+    // 가장 닮은 실제 가인: 같은 획이 많을수록, 같은 갈래면 더
+    const near = MK.map((m, i) => ({ i, m, s: m[2].filter(k => pick.includes(k)).length + m[2].filter(k => !pick.includes(k) && pick.some(p => ST[p][0] === ST[k][0])).length*.6 + 0 }))
+                   .filter(x => x.m[1] === food).sort((a, b) => b.s - a.s)[0];
+    // 보여줄 획 = 고른 가인의 획 넷 (점수 높은 순) → 획과 가인이 항상 같음
+    const strokes = near.m[2].slice().sort((a, b) => (sc[b] || 0) - (sc[a] || 0));
+    return { food, pick, why, near, strokes };
+  }
+  function result(){
+    step = 6; const r = predict(), m = r.near.m;
+    lft.innerHTML = `<div class="k"><span>( 테스트 결과 )</span></div>
+      <div class="tile"><img src="gain/g_${m[0]}.png" alt="가장 닮은 가인"></div>
+      <div class="cap"><span>家印 ${pad(r.near.i + 1)}</span><span>${CATS[m[1]].name}</span></div>`;
+    const cnt = {}; r.strokes.forEach(k => cnt[ST[k][2]] = (cnt[ST[k][2]] || 0) + 1);
+    form.innerHTML = `<div class="fs">
+      <h2>家印 ${pad(r.near.i + 1)}에 가까운 손맛이에요</h2>
+      <p class="lead">답해 주신 ${CATS[r.food].name}에서 이런 미생물 네 가지가 보여요. 네 미생물의 획을 겹치면 이 가인이 돼요.</p>
+      <div class="sec"><span class="sl">(1) 예상 획</span><div class="sc"><ol class="tst">${r.strokes.map(k => {
+          return `<li title="${(r.why[k] || []).map(x => x[0]).filter((x, j, a) => a.indexOf(x) === j).slice(0, 2).join(' · ')}"><img src="gain/s_${k}.png" alt=""><span>${short(ST[k][0])}</span><em>${TASTE6[ST[k][2]]}</em></li>`; }).join('')}</ol></div></div>
+      <div class="sec"><span class="sl">(2) 맛의 갈래</span><div class="sc"><div class="ttz">${TASTE6.map((t, i) => `<span class="${cnt[i] ? 'on' : ''}">${t}${cnt[i] ? ' ' + cnt[i] : ''}</span>`).join('')}</div></div></div>
+      <p class="err" aria-hidden="true"></p>
+      <button type="button" class="cta" id="tGo"><span>진짜 가인 받으러 가기</span><i>→</i></button>
+      <div class="foot"><button type="button" class="ghost" id="tAgain">다시 해보기</button></div></div>`;
+    $('tAgain').onclick = start;
+    $('tGo').onclick = () => setView('reception', () => {
+      $('give').click();
+      const k = document.querySelector(`input[name="kind"][value="${r.food}"]`); if (k) k.checked = true;
+    });
+    gainEl.scrollTop = 0;
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (step === 0) return ask(1);
+    const v = [...form.querySelectorAll('input[name="q"]:checked')].map(i => +i.value), q = Q[step - 1];
+    if (q.k !== 'many' && !v.length){ $('tErr').textContent = q.k === 'two' ? '맛을 하나 이상 골라 주세요.' : '하나를 골라 주세요.'; return; }
+    if (step === 1 && ans[0] && ans[0][0] !== v[0]) ans[3] = [];   // 음식을 바꾸면 재료 답은 비움
+    ans[step - 1] = v;
+    step < 5 ? ask(step + 1) : result();
+  });
+  start();
+}
+
+
+/* ════════════════ 원리: 가인을 새기는 법 ════════════════ */
+{
+  const T6 = ['신맛', '단맛', '화사한 맛', '감칠맛', '청량한 맛', '구수한 맛'];
+  const ROW = ['세균', '유산균', '효모', '곰팡이'], CNT = ['1획', '2획', '3획', '4획 이상'];
+  const HS = {
+    b1:['Bacillus amyloliquefaciens',0,1], b2:['Bacillus licheniformis',0,3], b3:['Bacillus subtilis',0,5],
+    l1:['Weissella koreensis',1,0], l2:['Leuconostoc citreum',1,0], l3:['Lactobacillus sakei',1,0], l4:['Lactobacillus plantarum',1,0], l5:['Pediococcus pentosaceus',1,0],
+    l6:['Pediococcus pentosaceus',1,1], l7:['Tetragenococcus halophilus',1,3], l8:['Leuconostoc mesenteroides',1,4], l9:['Lactobacillus brevis',1,4], l10:['Leuconostoc mesenteroides',1,4],
+    y1:['Pichia kudriavzevii',2,0], y2:['Kazachstania exigua',2,1], y3:['Saccharomyces cerevisiae',2,1], y4:['Saccharomycopsis fibuligera',2,1],
+    y5:['Pichia fermentans',2,2], y6:['Saccharomyces cerevisiae',2,2], y7:['Zygosaccharomyces rouxii',2,3], y8:['Candida versatilis',2,5],
+    m1:['Rhizopus oryzae',3,1], m2:['Monascus purpureus',3,2], m3:['Aspergillus oryzae',3,3], m4:['Aspergillus sojae',3,3], m5:['Aspergillus kawachii',3,3]
+  };
+  const HM = [
+    ['A1',0,['y5','l2','l3','l8']], ['A2',0,['l1','l5','l4','y6']], ['A3',0,['l1','l9','l10','y2']], ['A4',0,['l8','l2','l4','l6']],
+    ['B1',1,['l7','y8','b1','m4']], ['C3',1,['b1','y7','y8','l9']], ['E1',1,['m5','m1','m4','l7']],
+    ['B2',2,['m3','l7','y8','b3']], ['B3',2,['m3','l8','y8','b2']], ['C2',2,['b3','m3','l7','m4']],
+    ['B4',3,['y7','y3','m3','b3']], ['C1',3,['m3','y2','y8','m2']], ['C4',3,['b2','m2','y3','l7']], ['E2',3,['y8','m3','y6','b3']],
+    ['D1',4,['y1','y6','y5','m4']], ['D2',4,['m1','y1','y3','l4']], ['D3',4,['m3','y4','l9','l1']], ['D4',4,['y6','l4','l5','m5']]
+  ];
+  const sh = n => n.replace(/^(\w)\w+ /, '$1. ');
+  const gl = k => `gain/s_${k}.png`;
+  const howEl = $('how');
+
+  // (1) 고르기: 이름님 김치의 대표 균주 넷
+  const PK = [['y5', 7.6], ['l2', 2.6], ['l3', 2.1], ['l8', 1.8]];
+  $('hPick').innerHTML = PK.map(([k, x]) => `<li><img src="${gl(k)}" alt=""><span class="nm"><i>${HS[k][0]}</i></span><span class="ty">${ROW[HS[k][1]]} · ${T6[HS[k][2]]}</span><span class="br"><s><b data-w="${x / 8 * 100}"></b></s><em>×${x.toFixed(1)}</em></span></li>`).join('');
+
+  // (2) 획의 수
+  $('hCount').innerHTML = ['b1', 'l3', 'y5', 'm3'].map((k, r) => `<figure><div class="sq"><img src="${gl(k)}" alt=""></div><figcaption>${CNT[r]}<span>${ROW[r]}</span></figcaption></figure>`).join('');
+
+  // (3) 맛의 모양: 여섯 가지 기본 형태
+  const TSH = [
+    ['신맛', '날카롭고 순간적으로 퍼지는 산미의 자극을 교차하는 두 획으로 표현했다.', '<path d="M32 32L68 68M68 32L32 68"/>'],
+    ['단맛', '혀를 부드럽게 감싸는 단맛의 인상을 1/4 원형으로 나타냈다.', '<path d="M32 32A36 36 0 0 1 68 68"/>'],
+    ['화사한 맛', '꽃향기와 과실향이 은은하게 번지는 느낌을 열린 반원 형태로 표현했다.', '<path d="M59 32A18 18 0 0 0 59 68"/>'],
+    ['청량한 맛', '맑고 깨끗하게 확장되는 청량감을 탄산을 연상시키는 원형 구조로 표현했다.', '<circle cx="50" cy="50" r="18"/>'],
+    ['감칠맛', '점을 찍어내듯 맛의 존재감을 더하는 감칠맛을 사선 획의 형태로 표현했다.', '<path d="M45.5 54.5L54.5 45.5"/>'],
+    ['구수한 맛', '오랜 시간 축적된 깊이와 안정감을 가장 단순하고 묵직한 수직선으로 표현했다.', '<path d="M50 32V68"/>']
+  ];
+  $('hTaste').innerHTML = TSH.map(t => `<figure><div class="sq"><svg class="tsv" viewBox="0 0 100 100" aria-hidden="true">${t[2]}</svg></div><figcaption>${t[0]}<span>${t[1]}</span></figcaption></figure>`).join('');
+
+  // (3) 획 사전: 갈래(줄) × 맛(칸)
+  const dic = $('hDic'), dicx = $('hDicX'), dicx0 = dicx.innerHTML;
+  dic.innerHTML = `<span class="th"></span>${T6.map(t => `<span class="th">${t}</span>`).join('')}` +
+    ROW.map((r, ri) => `<span class="rh">${r}<br><span style="color:#c4c1bb">${CNT[ri]}</span></span>` + T6.map((t, ti) =>
+      `<div class="cell" data-t="${t}">${Object.keys(HS).filter(k => HS[k][1] === ri && HS[k][2] === ti).slice(0, 1).map(k => `<button type="button" class="g" data-k="${k}" aria-label="${HS[k][0]}"><img src="${gl(k)}" alt=""></button>`).join('')}</div>`).join('')).join('');
+  const showG = k => { dicx.innerHTML = k ? `<i>${HS[k][0]}</i> <span>· ${ROW[HS[k][1]]} ${CNT[HS[k][1]]} · ${T6[HS[k][2]]}</span>` : dicx0; dic.querySelectorAll('.g').forEach(g => g.classList.toggle('on', g.dataset.k === k)); };
+  dic.querySelectorAll('.g').forEach(g => { g.onmouseenter = g.onfocus = () => showG(g.dataset.k); g.onclick = () => showG(g.dataset.k); });
+  dic.onmouseleave = () => showG(null);
+
+  // (4) 겹치기: 18개 가인 중 하나를 골라 네 획 → 문양
+  const cmb = $('hCmb');
+  let cur = -1;
+  function showM(i){
+    if (i === cur) return; cur = i; const m = HM[i];
+    cmb.classList.remove('on');
+    cmb.innerHTML = `<div class="parts">${m[2].map((k, j) => `<div class="pt" style="transition-delay:${j * .14}s"><div class="sq"><img src="${gl(k)}" alt=""></div><p><i>${sh(HS[k][0])}</i><span>${ROW[HS[k][1]]} · ${T6[HS[k][2]]}</span></p></div>`).join('')}</div>
+      <div class="eq" aria-hidden="true"></div>
+      <figure class="out"><div class="sq"><img src="gain/g_${m[0]}.png" alt="家印 ${pad(i + 1)}" style="transition-delay:.7s"></div><figcaption><span>家印 ${pad(i + 1)}</span><span>${CATS[m[1]].name}</span></figcaption></figure>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => cmb.classList.add('on')));
+  }
+
+  // 화면에 들어올 때 움직임
+  const hio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    if (e.target.id === 'hs1') e.target.querySelectorAll('b[data-w]').forEach(b => b.style.width = b.dataset.w + '%');
+    if (e.target.id === 'hs4' && cur < 0) showM(0);
+    hio.unobserve(e.target);
+  }), { root: howEl, threshold: .25 });
+  ['hs1', 'hs4'].forEach(id => hio.observe($(id)));
+  howEl.querySelectorAll('[data-go]').forEach(b => b.onclick = () => setView(b.dataset.go));
+}
+
+/* ════════════════ 소개: 불러오기 ════════════════ */
+$('introCounts').innerHTML = CATS.map(c => `<li><span class="n">(${c.count})</span> ${c.name}</li>`).join('');
+let loaded = 0; const loadTotal = ARTS.length + 2;
+ARTS.forEach(im => (im.complete && im.naturalWidth ? Promise.resolve() : new Promise(r => { im.addEventListener('load', r, {once:true}); im.addEventListener('error', r, {once:true}); })).then(() => loaded++));
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => loaded++);
+loaded++;                                   // 여기까지 오면 서고 장면은 이미 만들어져 있음
+{
+  const giant = $('giant'), loadNum = $('loadNum'), t0 = performance.now();
+  let shown = 0, cyc = 0, lastSwap = 0;
+  (function tickLoad(now){
+    now = now || performance.now();
+    const goal = Math.min(100, loaded/loadTotal*100, (now - t0)/16);   // 너무 빨리 끝나도 1.6초는 셈
+    shown += (goal - shown)*.2; if (goal - shown < .6) shown = goal;
+    loadNum.innerHTML = `${pad(Math.round(shown/100*ALL.length), 4)}<small>권</small>`;   // 불러오는 만큼 보관된 기록 수가 차오름
+    if (shown < 100){
+      if (!reduce && now - lastSwap > 140){ lastSwap = now; cyc = (cyc + 1) % 10; giant.src = `art/${pad(cyc + 1)}.png`; }   // 불러오는 동안 가인이 바뀜
+      requestAnimationFrame(tickLoad);
+    } else { giant.src = 'art/01.png'; }
+  })();
+}
+</script>

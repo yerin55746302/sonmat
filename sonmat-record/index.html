@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>손맛 균주 기록</title>
+<style>
+@font-face{font-family:"Pretendard";src:url(fonts/Pretendard-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+:root{
+  --ink:#0b0b0b; --muted:#6b6863; --faint:#cfcdc9; --soft:#efeeec; --panel:#e7e6e3; --accent:#E55F22; --bg:#fff;
+  --xl:clamp(52px,15vw,62px);   /* hero / big numerals */
+  --l:clamp(29px,8.4vw,34px);   /* section titles */
+  --m:16px;                      /* lead text */
+  --s:13px;                      /* captions, labels (모바일 최소 12px 이상) */
+  --pad:16px;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:40px}
+body{font-family:"Pretendard",-apple-system,system-ui,sans-serif;font-weight:500;font-size:var(--s);line-height:1.38;letter-spacing:-.005em;color:var(--ink);background:#dcdbd8;word-break:keep-all;overflow-wrap:break-word}
+.app{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh;overflow:hidden}
+img{display:block;max-width:100%}
+i{font-style:italic}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.totop{display:inline-block;margin-top:28px;color:var(--ink);text-decoration:none;padding:10px 0}
+/* type */
+.xl{font-size:var(--xl);line-height:1.06;letter-spacing:-.04em}
+.l{font-size:var(--l);line-height:1.2;letter-spacing:-.03em}
+.m{font-size:var(--m);line-height:1.32;letter-spacing:-.02em}
+.mu{color:var(--muted)}
+.lb{color:var(--muted)}            /* small label, e.g. 진행 (1) */
+.c{text-align:center}
+.r{text-align:right}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px var(--pad);background:rgba(239,238,236,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background .3s,color .3s}
+.top .logo{height:11px;width:auto;transition:filter .3s}
+.top.dark .logo{filter:invert(1)}
+.top.dark{background:rgba(11,11,11,.82);color:#fff}
+
+/* blocks */
+.sec{padding:56px var(--pad) 64px}
+.soft{background:var(--soft)}
+.dark{background:var(--ink);color:#fff}
+.dark .lb,.dark .mu{color:#a3a19c}
+.gap-s{margin-top:8px}.gap-m{margin-top:20px}.gap-l{margin-top:44px}.gap-xl{margin-top:72px}
+.panel{background:var(--panel);border-radius:6px;padding:14px 14px 16px}
+.bleed{margin-left:calc(var(--pad)*-1);margin-right:calc(var(--pad)*-1)}
+
+/* hero */
+.hero{padding:40px var(--pad) 48px}
+.hero h1{margin-top:2px;font-weight:500}
+.hero .mark{margin:56px 0 0}
+.hero .mark img{width:64%;margin:0 auto}
+.feat{display:grid;grid-template-columns:1fr 1fr;column-gap:18px;row-gap:28px;margin-top:0}
+.feat .ic{display:block;color:var(--muted);margin-bottom:1px}
+.feat p{color:var(--muted)}
+.feat b{display:block;font-weight:500;color:var(--ink)}
+
+/* spec table (hairlines only for data rows) */
+.spec{list-style:none;border-top:1px solid #dddcd9}
+.spec li{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;padding:12px 0 13px;border-bottom:1px solid #dddcd9;font-size:var(--m);line-height:1.32;letter-spacing:-.02em}   /* 표도 본문과 같은 크기 */
+.spec li>:last-child{text-align:right;color:var(--muted)}
+.spec li.now>:first-child,.spec li.now>:last-child{color:var(--accent)}
+.spec li.todo>:first-child{color:var(--muted)}
+.dark .spec,.dark .spec li{border-color:#2a2a2a}
+
+
+
+/* progress panel */
+.count{display:flex;align-items:flex-end;gap:2px;margin-top:30px}
+.count .xl{font-size:clamp(120px,38vw,160px);line-height:.78;letter-spacing:-.06em}
+.meter{height:2px;background:#d3d2ce;margin-top:22px;position:relative;overflow:hidden}
+.meter b{position:absolute;inset:0 auto 0 0;width:0;background:var(--ink);transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
+
+/* bars */
+.legend{display:flex;gap:14px}
+.legend span::before{content:"";display:inline-block;width:7px;height:7px;margin-right:5px;background:currentColor;vertical-align:1px}
+.legend .a{color:#fff}.legend .b{color:#6e6e6e}
+.soft .legend .a,.white .legend .a{color:var(--ink)} .soft .legend .b,.white .legend .b{color:var(--faint)}
+.bars{list-style:none;margin-top:18px}
+.bars li{padding:12px 0}
+.bars .hd{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.bars .tr{height:4px;position:relative;margin-top:3px}
+.bars .tr b{position:absolute;inset:0 auto 0 0;width:0;background:#fff;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+.bars .tr.av b{background:#4a4a4a}
+.white .bars .tr b{background:var(--ink)} .white .bars .tr.av b{background:var(--faint)}
+.bars .ft{display:flex;justify-content:space-between;margin-top:7px}
+
+/* numbered points (alternating) */
+.pt{margin-top:40px}
+.pt .badge{display:block;color:#a3a19c}
+.pt h3{font-weight:500;margin-top:16px}
+.pt p{margin-top:8px;max-width:78%}
+.pt.rt{text-align:right}.pt.rt p{margin-left:auto}
+
+/* strokes grid (staggered) */
+.tiles{display:grid;grid-template-columns:1fr 1fr;column-gap:8px;row-gap:28px;margin-top:28px}
+.tile{display:block;width:100%}
+.tile .sq{position:relative;aspect-ratio:1/1;background:var(--soft);display:flex;align-items:center;justify-content:center;transition:background .3s}
+.tile svg{width:44%;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile .cap{margin-top:10px;color:var(--muted)}
+.tile .cap b{font-weight:500;color:var(--ink)}
+.tile .more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
+.tile .more>div{overflow:hidden}
+.tile.open .more{grid-template-rows:1fr}
+.tile.open .sq{background:var(--panel)}
+.tile .cap{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tile .ar{flex:none;width:12px;height:12px;transform:rotate(90deg);transition:transform .35s ease}
+.tile .ar svg{width:12px;height:12px;stroke:var(--ink);stroke-width:1.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tile.open .ar{transform:rotate(-90deg)}
+.tile .more p{padding-top:6px;color:var(--ink)}
+.tiles .tile:nth-child(even){margin-top:64px}
+.tiles .tile:nth-child(3){margin-top:-36px}
+
+/* environment numerals */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);column-gap:16px}
+.trio dd{margin-top:6px}
+.nums{display:grid;grid-template-columns:1fr;row-gap:8px;margin-top:28px}
+.nums .panel{display:grid;grid-template-columns:1fr auto;align-items:end;min-height:150px}
+.nums .num{font-size:clamp(88px,27vw,112px);line-height:.8;letter-spacing:-.06em;grid-column:1/-1;margin-top:26px}
+.nums .cap{grid-column:1/-1;margin-top:16px}
+.temp{display:grid;grid-template-columns:1fr 3fr;column-gap:3px;align-items:end;height:130px;margin-top:22px}
+.temp div{background:var(--ink);position:relative}
+.temp div.lo{background:#bdbbb6}
+.temp div span{position:absolute;top:-18px;left:0}
+.temp-x{display:grid;grid-template-columns:1fr 3fr;column-gap:3px;margin-top:8px}
+
+/* record */
+.photo{aspect-ratio:4/5;object-fit:cover;object-position:50% 70%;width:100%}
+.photo.bleed{max-width:none}
+.small-photo{width:46%;margin:44px auto 0}
+.small-photo img{aspect-ratio:4/3;object-fit:cover;object-position:50% 8%;width:100%}
+.steps{list-style:none;margin-top:24px}
+.steps li{display:grid;grid-template-columns:24px 1fr;column-gap:8px;padding:10px 0}
+.steps li .n{color:var(--muted)}
+.steps li>span:last-child{font-size:var(--m);line-height:1.32;letter-spacing:-.02em}   /* 김장 과정: 위 본문과 같은 크기 */
+.steps li .n{line-height:calc(var(--m)*1.32)}
+
+/* term tooltip */
+.term{white-space:nowrap}
+.term .q{position:relative;display:inline-flex;vertical-align:-.12em;margin-left:2px;width:1.05em;height:1.05em;padding:0}
+.term .q svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.term .q svg .dot{fill:currentColor;stroke:none}
+.term .q::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}   /* 누르는 범위 44px */
+.tip{position:fixed;z-index:50;background:var(--ink);color:#fff;font-size:var(--s);line-height:1.4;padding:9px 11px;border-radius:6px;opacity:0;transform:translateY(-3px);pointer-events:none;transition:opacity .2s,transform .2s}
+.tip.inv{background:#fff;color:var(--ink)}
+.tip.on{opacity:1;transform:none}
+/* glossary */
+details{border-bottom:1px solid #dddcd9}
+details:first-child{border-top:1px solid #dddcd9}
+summary{list-style:none;display:flex;justify-content:space-between;padding:11px 0 12px;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary .pm{color:var(--muted);transition:transform .3s}
+details[open] summary .pm{transform:rotate(45deg)}
+details>div{padding:0 0 12px;color:var(--muted)}
+
+/* end */
+.end{padding:64px var(--pad) calc(48px + env(safe-area-inset-bottom))}
+.endlogo{width:100%;height:auto;margin-top:72px}
+
+.rv{opacity:0;transform:translateY(12px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+
+<!-- hero -->
+<div class="hero soft">
+  <h1 class="sr">이름님의 김치 · 손맛 균주 기록 SM-26-1114-001</h1>
+  <div class="feat">
+    <p><span class="ic">1</span><b>식품</b>김치 · 김장 김치</p>
+    <p><span class="ic">2</span><b>이어 온 해</b>60년, 최초 제작자 어머니 이름</p>
+    <p><span class="ic">3</span><b>대표 균주</b>4종, 전체 <span class="term" data-t="균총">균총</span>의 71.8%</p>
+    <p><span class="ic">4</span><b>현재 단계</b>가인 새김 · 서고 보관</p>
+  </div>
+  <div class="mark"><img src="img/mark.png" alt="이름님 가인"></div>
+  <p class="lb gap-xl">한 집의 맛</p>
+  <p class="m gap-s">한 가정에서 이어 온 김치의 미생물을 분석하고, 대표 균주 네 가지를 한 획씩 모아 가인으로 새겼습니다.</p>
+</div>
+<img class="photo" src="img/microbe.jpg" alt="현미경으로 본 유산균" style="aspect-ratio:4/3;object-position:30% 50%">
+
+<!-- (1) progress -->
+<section id="p" class="sec">
+  <p class="lb">진행 상황 (1)</p>
+  <h2 class="l gap-m">가인을 새겨<br>서고에 보관 중이에요.</h2>
+  <div class="panel gap-l rv">
+    <p>01</p>
+    <div class="count"><span class="xl" id="pc">6</span><span class="m mu">/ 6 단계</span></div>
+    <div class="meter"><b id="meter"></b></div>
+    <p class="m gap-m">기록지 발송까지 한 단계 남았어요.</p>
+    <p class="gap-s mu">보고서, 김장 기록지, 가인 인장이 함께 발송됩니다. 2026.11.28 예정</p>
+  </div>
+  <ul class="spec gap-l" id="steps"></ul>
+</section>
+
+<!-- (2) result, dark -->
+<section id="r" class="sec dark">
+  <p class="lb">분석 결과 (2)</p>
+  <h2 class="l gap-m">대표 균주 넷이<br>71.8%를 이뤄요.</h2>
+  <p class="m gap-m">약 62,000개의 유효 서열 가운데 대표 균주 네 가지가 전체 균총의 71.8%를 차지했습니다. 평균 김치의 30.9%보다 균총이 소수의 균에 모여 있어, 이 집만의 뚜렷한 맛을 만듭니다.</p>
+
+  <div class="gap-l rv">
+    <p class="lb" style="margin-bottom:10px">대표 균주 <span class="term" data-t="상대 존재비">상대 존재비</span></p>
+    <div class="legend"><span class="a">이번 시료</span><span class="b">평균 김치</span></div>
+    <ul class="bars" id="abund"></ul>
+  </div>
+
+  <div class="pt rv"><span class="badge">1</span><h3 class="m">화사한 향의 효모</h3><p class="mu">평균 김치에서 1% 안팎으로만 검출되는 <span class="term" data-t="효모">효모</span> <i>Pichia fermentans</i>가 6.8%를 차지했습니다. 이 효모가 만드는 향 성분이 화사한 맛으로 이어진 것으로 해석됩니다.</p></div>
+  <div class="pt rv"><span class="badge">2</span><h3 class="m">오래 기다린 신맛</h3><p class="mu">숙성 유산균 <i>Lactobacillus sakei</i>의 높은 존재비는 6개월에 걸친 저온 숙성과 선명한 산미를 뒷받침합니다.</p></div>
+</section>
+
+<!-- taste -->
+<section class="sec white">
+  <p class="lb">맛의 분포 (3)</p>
+  <h2 class="l gap-m">화사하게 시작해<br>감칠맛으로 남아요.</h2>
+  <p class="m gap-m">화사한 맛이 7.4점으로 평균(3.5점)의 두 배를 넘었습니다. 신맛과 감칠맛도 평균보다 높고, 단맛과 구수한 맛은 비슷하거나 조금 낮습니다.</p>
+  <p class="mu gap-s">10점 척도 · 레퍼런스 128가정 평균과 비교</p>
+  <div class="gap-l rv">
+    <div class="legend"><span class="a">이름님 김치</span><span class="b">평균</span></div>
+    <ul class="bars" id="taste"></ul>
+  </div>
+</section>
+
+<!-- (4) mark -->
+<section id="m" class="sec" style="padding-top:24px">
+  <p class="lb">가인 (4)</p>
+  <h2 class="l gap-m">네 획으로 새긴<br>한 집의 맛.</h2>
+  <p class="m gap-m">획의 수는 대표 균주의 수와 종류를, 획의 모양은 그 균이 만드는 맛을 나타냅니다.</p>
+  <div class="tiles" id="tiles"></div>
+
+  <p class="lb gap-xl">획 읽는 법</p>
+  <ul class="spec gap-m">
+    <li><span>세균 · 유산균</span><span>1획 · 2획</span></li>
+    <li><span>효모 · 곰팡이</span><span>3획 · 4획 이상</span></li>
+    <li><span>신맛</span><span>교차하는 두 획</span></li>
+    <li><span>단맛</span><span>1/4 곡선</span></li>
+    <li><span>화사한 맛</span><span>반원</span></li>
+    <li><span>청량한 맛</span><span>사선</span></li>
+    <li><span>감칠맛</span><span>사선 획</span></li>
+    <li><span>구수한 맛</span><span>수직선</span></li>
+  </ul>
+</section>
+
+<!-- (5) environment -->
+<section id="e" class="sec soft">
+  <p class="lb">발효 환경 (5)</p>
+  <h2 class="l gap-m">소금과 시간이<br>고른 미생물.</h2>
+  <p class="mu gap-s">초기 2일 18°C · 저온 숙성 약 6개월</p>
+  <p class="m gap-l">약 2.5%의 염도가 <span class="term" data-t="선택압">선택압</span>으로 작용해 김치 발효에 적응한 <span class="term" data-t="젖산균">젖산균</span>이 경쟁력을 얻었습니다. 저온에서 오래 숙성되는 동안 산뜻한 맛을 만드는 균에서 깊은 신맛을 만드는 균으로 <span class="term" data-t="천이">천이</span>가 천천히 일어났습니다.</p>
+
+  <dl class="trio gap-l rv">
+    <div><dt class="lb">pH</dt><dd class="l">4.1</dd></div>
+    <div><dt class="lb">적정산도</dt><dd class="l">0.82%</dd></div>
+    <div><dt class="lb">염도</dt><dd class="l">2.5%</dd></div>
+  </dl>
+  <p class="mu gap-m">저온 숙성 김치에서 나타나는 안정적인 산성 환경으로, 선명한 산미와 맛의 균형이 유지되는 범위입니다.</p>
+
+  <div class="gap-l rv">
+    <p class="lb">발효 온도 변화 · °C</p>
+    <div class="temp"><div style="height:85%"><span>18</span></div><div class="lo" style="height:20%"><span>4</span></div></div>
+    <div class="temp-x mu"><span>초기 2일</span><span>저온 숙성 약 6개월</span></div>
+  </div>
+</section>
+
+<!-- (6) record -->
+<section id="k" class="sec" style="padding-bottom:88px">
+  <p class="lb">손맛 기록 (6)</p>
+  <h2 class="l gap-m">겨울이면 모여<br>함께 담근 김치.</h2>
+  <p class="m gap-m">이름님의 김치는 가족이 함께 만들어 온 60년 전통의 김장 김치입니다. 김치를 만드는 모습을 보고 따라 하며 방법을 익혀 왔습니다.</p>
+  <img class="photo bleed gap-l" src="img/kimjang.jpg" alt="배추와 무를 씻는 모습" style="width:calc(100% + 2*var(--pad))">
+  <p class="lb gap-l">김장 과정</p>
+  <ol class="steps">
+    <li><span class="n">1</span><span><b style="font-weight:500">절이기</b><br><span class="mu">배추를 굵은 소금에 하루 절인 뒤 물기를 뺍니다. 날씨에 따라 시간이 달라져 손으로 만져 확인합니다.</span></span></li>
+    <li><span class="n">2</span><span>양념<br><span class="mu">찹쌀풀 2컵, 고춧가루 5컵, 다진 마늘 2컵, 생강 반 컵, 새우젓 1컵, 멸치액젓 2컵</span></span></li>
+    <li><span class="n">3</span><span>버무리기<br><span class="mu">양념을 절인 배추에 고르게 바르고 버무립니다.</span></span></li>
+    <li><span class="n">4</span><span>담기<br><span class="mu">용기에 차곡차곡 담습니다.</span></span></li>
+    <li><span class="n">5</span><span>숙성<br><span class="mu">김치냉장고에서 일정한 시간 동안 숙성시킵니다.</span></span></li>
+    <li><span class="n">6</span><span>확인<br><span class="mu">시원한 향이 먼저 올라오고 국물에 작은 기포가 생기면 잘 익는 중입니다.</span></span></li>
+  </ol>
+</section>
+
+<!-- (7) method -->
+<section id="x" class="sec soft">
+  <p class="lb">분석 방법 (7)</p>
+  <h2 class="l gap-m">분석 사양</h2>
+  <ul class="spec gap-l">
+    <li><span>시료</span><span>배추와 국물 50g</span></li>
+    <li><span>채취</span><span>2026.07.18</span></li>
+    <li><span>보관</span><span>−80°C</span></li>
+    <li><span>분석</span><span>16S · ITS1</span></li>
+    <li><span>서열</span><span>약 62,000개</span></li>
+    <li><span>비교</span><span>128가정 평균</span></li>
+  </ul>
+</section>
+
+<footer class="end soft" style="padding-top:8px">
+  <p class="mu">© 2026 Sonmat · SM-26-1114-001</p>
+</footer>
+</div>
+
+<script>
+const STEPS=[
+  ["시료 채취","2026.07.18"],["운반 · 보관","2026.07.19"],["균총 분석","2026.08.12"],
+  ["대표 균종 산출","2026.09.03"],["가인 새김 · 서고 보관","진행 중"],["기록지 발송","2026.11.28 예정"]];
+const DONE=4;
+document.getElementById("steps").innerHTML=STEPS.map((s,i)=>`<li class="${i<DONE?"":i===DONE?"now":"todo"}"><span>(${i+1}) ${s[0]}</span><span>${s[1]}</span></li>`).join("");
+document.getElementById("pc").textContent=DONE+1;
+
+const AB=[["Pichia fermentans","효모",6.8,0.9],["Leuconostoc citreum","유산균",21.4,8.2],["Lactobacillus sakei","유산균",24.7,11.5],["Leuconostoc mesenteroides","유산균",18.9,10.3],["기타","Weissella 계열 등",28.2,69.1]];
+const MAXA=70;
+document.getElementById("abund").innerHTML=AB.map(a=>`<li><div class="hd m"><span>${a[0]==="기타"?a[0]:"<i>"+a[0]+"</i>"}</span><span>${a[2]}%</span></div><div class="tr"><b data-w="${a[2]/MAXA*100}"></b></div><div class="tr av"><b data-w="${a[3]/MAXA*100}"></b></div><div class="ft mu"><span>${a[1]}</span><span>평균 ${a[3]}%${a[0]!=="기타"?" · ×"+(a[2]/a[3]).toFixed(1):""}</span></div></li>`).join("");
+
+const TS=[["신맛",7.8,6.1],["단맛",3.2,4.0],["화사한 맛",7.4,3.5],["감칠맛",6.6,5.2],["구수한 맛",4.1,4.4]];
+document.getElementById("taste").innerHTML=TS.map(t=>{const d=(t[1]-t[2]).toFixed(1);return `<li><div class="hd m"><span>${t[0]}</span><span>${t[1]}</span></div><div class="tr"><b data-w="${t[1]*10}"></b></div><div class="tr av"><b data-w="${t[2]*10}"></b></div><div class="ft mu"><span>평균 ${t[2]}</span><span>${d>0?"+":""}${d}</span></div></li>`}).join("");
+
+const SV={
+  eye:'<path d="M4 31 C13 7,35 7,44 31"/><path d="M4 9 C13 33,35 33,44 9"/><path d="M24 3 V37"/>',
+  cross:'<path d="M7 9 L41 31"/><path d="M24 3 V37"/>',
+  bend:'<path d="M6 32 L24 12 L42 32"/>',
+  ring:'<circle cx="14" cy="20" r="9"/><path d="M23 20 H44"/>'
+};
+const ST=[
+  ["eye","Pichia fermentans","열린 곡선. 화사한 맛을 만드는 효모","향 성분을 만들어 재료 본연의 향을 풍부하게 합니다. 평균 대비 7.6배로 이 김치에서 가장 두드러지는 균입니다."],
+  ["cross","Leuconostoc citreum","사선. 산뜻한 신맛을 만드는 유산균","산미와 신선한 향으로 김치 특유의 시원한 첫맛을 만듭니다. 평균 대비 2.6배."],
+  ["bend","Lactobacillus sakei","꺾인 선. 깊은 신맛을 만드는 유산균","숙성이 진행될수록 안정적으로 증식하며 산도를 유지합니다. 존재비로는 가장 많은 균. 평균 대비 2.1배."],
+  ["ring","Leuconostoc mesenteroides","원. 은은한 탄산감을 만드는 유산균","발효 초기에 은은한 탄산감을 만듭니다. 평균 대비 1.8배."]
+];
+document.getElementById("tiles").innerHTML=ST.map((s,i)=>`<button class="tile rv" aria-expanded="false"><div class="sq"><svg viewBox="0 0 48 40">${SV[s[0]]}</svg></div><div class="cap"><span><b>(${i+1}) <i>${s[1]}</i></b><br>${s[2]}</span><span class="ar"><svg viewBox="0 0 12 12"><path d="M4 1.5 L8.5 6 L4 10.5"/></svg></span></div><div class="more"><div><p>${s[3]}</p></div></div></button>`).join("");
+document.querySelectorAll(".tile").forEach(b=>b.onclick=()=>{b.classList.toggle("open");b.setAttribute("aria-expanded",b.classList.contains("open"))});
+
+const GL=[["균총","한 식품 안에 함께 사는 미생물의 무리"],["젖산균","당을 분해해 젖산을 만들며 김치의 신맛을 만드는 세균"],["효모","알코올류 · 에스터류 등 향 성분 생성에 관여하는 진균"],["천이","시간에 따라 우세한 미생물이 바뀌는 현상"],["선택압","염도 등 환경 조건이 살아남을 미생물을 고르는 힘"],["상대 존재비","전체 균총에서 특정 균이 차지하는 비율"]];
+const GD=Object.fromEntries(GL);
+const QSVG='<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.6"/><path d="M6.1 6.3a1.95 1.95 0 1 1 2.8 1.75c-.6.3-.9.7-.9 1.35v.35"/><circle cx="8" cy="11.6" r=".55" class="dot"/></svg>';
+const tip=document.createElement("div");tip.className="tip";document.body.appendChild(tip);
+let cur=null;
+function show(t){cur=t;sy=scrollY;tip.textContent=GD[t.dataset.t];tip.classList.toggle("inv",!!t.closest(".dark"));tip.classList.add("on");
+  const r=t.querySelector(".q").getBoundingClientRect(),w=Math.min(230,innerWidth-32);tip.style.width=w+"px";
+  let x=r.left+r.width/2-w/2;x=Math.max(16,Math.min(innerWidth-16-w,x));tip.style.left=x+"px";tip.style.top=(r.bottom+8)+"px"}
+function hide(){cur=null;tip.classList.remove("on")}
+document.querySelectorAll(".term").forEach(t=>{const b=document.createElement("button");b.className="q";b.setAttribute("aria-label",t.dataset.t+" 뜻");b.innerHTML=QSVG;t.appendChild(b);
+  t.addEventListener("mouseenter",()=>show(t));t.addEventListener("mouseleave",hide);
+  b.addEventListener("click",e=>{e.stopPropagation();show(t)})});
+let sy=0;document.addEventListener("click",hide);addEventListener("scroll",()=>{if(cur&&Math.abs(scrollY-sy)>30)hide()},{passive:true});
+
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const t=e.target;t.classList.add("in");t.querySelectorAll("b[data-w]").forEach(b=>b.style.width=Math.min(100,b.dataset.w)+"%");io.unobserve(t)}),{threshold:.12});
+document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+const meterIO=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){document.getElementById("meter").style.width=((DONE+.5)/STEPS.length*100)+"%";meterIO.disconnect()}}));
+meterIO.observe(document.getElementById("meter"));
+
+
+
+</script>
+</body>
+</html>
