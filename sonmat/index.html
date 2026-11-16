@@ -2027,8 +2027,7 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
   const POOL = CATS.map((_, ci) => new Set(MK.filter(m => m[1] === ci).flatMap(m => m[2])));
 
   function steps(){
-    lft.innerHTML = `<ol class="steps tsteps${step ? '' : ' all'}">${LBL.map((l, i) => `<li class="${i + 1 === step ? 'on' : i + 1 < step ? 'done' : ''}"><em>(${i + 1})</em>${l}</li>`).join('')}</ol>
-      <div class="snum">${step ? pad(Math.min(step, 5)) + '<small>/05</small>' : ''}</div>`;
+    lft.innerHTML = `<div class="snum">${step ? pad(Math.min(step, 5)) + '<small>/05</small>' : ''}</div>`;
   }
   function start(){
     step = 0; ans = []; steps();
