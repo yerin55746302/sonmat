@@ -389,6 +389,8 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 .gain .lft .tile img{width:58%;max-height:70%;object-fit:contain}
 .gain .lft .cap{display:flex;justify-content:space-between;margin-top:12px;font-size:var(--t-s);line-height:1.35;font-weight:500}
 .gain .lft .cap span+span{color:var(--muted)}
+.gain .rtt{margin-top:calc(var(--t-l) * -.1)}          /* 결과 제목 글자 윗선 = 왼쪽 가인 상자 윗선 */
+.gain .foot .ghost{padding-left:18px}                   /* '다시 해보기' 시작선 = 버튼 글자 시작선 */
 .gain .tsent{margin:clamp(24px,4vh,44px) 0 0;font-size:var(--t-l);line-height:1.12;letter-spacing:-0.025em;word-break:keep-all;color:#cfccc6}
 .gain .tsent em{font-style:normal;color:#cfccc6;transition:color .5s ease}
 .gain .tsent em.on{color:var(--ink)}
@@ -2077,13 +2079,11 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
   }
   function result(){
     step = 6; const r = predict(), m = r.near.m;
-    lft.innerHTML = `<div class="k"><span>( 테스트 결과 )</span></div>
-      <div class="tile"><img src="gain/g_${m[0]}.png" alt="가장 닮은 가인"></div>
-      <div class="cap"><span>家印 ${pad(r.near.i + 1)}</span><span>${CATS[m[1]].name}</span></div>`;
+    lft.innerHTML = `<div class="tile"><img src="gain/g_${m[0]}.png" alt="가인 ${pad(r.near.i + 1)}"></div>`;
     const cnt = {}; r.strokes.forEach(k => cnt[ST[k][2]] = (cnt[ST[k][2]] || 0) + 1);
     form.innerHTML = `<div class="fs">
-      <h2>家印 ${pad(r.near.i + 1)}에 가까운 손맛입니다</h2>
-      <p class="lead">답해 주신 ${CATS[r.food].name}에서 이런 미생물 네 가지가 보입니다. 네 미생물의 획을 겹치면 이 가인이 됩니다.</p>
+      <h2 class="rtt">가인 ${pad(r.near.i + 1)}에 가까운 손맛입니다</h2>
+      <p class="lead">${CATS[r.food].name}에 사는 미생물 넷의 획을 겹친 가인입니다.</p>
       <div class="sec"><span class="sl">(1) 예상 획</span><div class="sc"><ol class="tst">${r.strokes.map(k => {
           return `<li title="${(r.why[k] || []).map(x => x[0]).filter((x, j, a) => a.indexOf(x) === j).slice(0, 2).join(' · ')}"><img src="gain/s_${k}.png" alt=""><span>${short(ST[k][0])}</span><em>${TASTE6[ST[k][2]]}</em></li>`; }).join('')}</ol></div></div>
       <div class="sec"><span class="sl">(2) 맛의 갈래</span><div class="sc"><div class="ttz">${TASTE6.map((t, i) => `<span class="${cnt[i] ? 'on' : ''}">${t}${cnt[i] ? ' ' + cnt[i] : ''}</span>`).join('')}</div></div></div>
