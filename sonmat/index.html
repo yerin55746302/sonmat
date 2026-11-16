@@ -442,19 +442,17 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 .cnt figcaption{margin-top:12px}
 .cnt figcaption span{display:block;color:var(--muted)}
 /* (3) 획 사전 */
-.dic{grid-column:1/-1;display:grid;grid-template-columns:subgrid;row-gap:var(--g);margin-top:clamp(32px,6vh,64px)}
-.dic .dr{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:start}
-.dic .dr>.rh{grid-column:1/3;color:var(--muted)}
-.dic .dr>.rh b{display:block;font-weight:500;color:var(--ink)}
-.dic .dr>.tl{grid-column:3/13;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--g)}
-.dic .hd>.tl span{color:var(--muted)}
-.dic .c{aspect-ratio:1;background:#faf9f7;display:grid;place-items:center}
-.dic .g{all:unset;cursor:pointer;width:100%;height:100%;display:grid;place-items:center;background:#f4f3f1;transition:background .25s}
-.dic .g img{height:38%;width:auto;display:block;transition:transform .3s ease}
-.dic .g:hover,.dic .g:focus-visible,.dic .g.on{background:#e9e7e3}
-.dic .g:hover img,.dic .g.on img{transform:scale(1.08)}
-.dic .g:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.dicx{grid-column:3/13;margin-top:22px;min-height:1.35em}
+.dic{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(6,minmax(0,1fr));column-gap:var(--g)}
+.dic .th{color:var(--muted);padding-bottom:14px}
+.dic .rh{color:var(--muted);padding:16px 0;align-self:start}
+.dic .cell{display:flex;flex-wrap:wrap;gap:10px 14px;align-content:flex-start;padding:16px 0;min-height:44px}
+.dic .g{all:unset;cursor:pointer;height:44px;display:block;opacity:.88;transition:opacity .2s,transform .2s}
+.dic .g img{height:100%;width:auto;display:block}
+.dic:hover .g{opacity:.25} .dic .g:hover,.dic .g:focus-visible,.dic .g.on{opacity:1;transform:translateY(-2px)}
+.dic .g:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.dic .rw{display:contents}
+.dic .rw:nth-of-type(odd)>*{background:none}
+.dicx{margin-top:22px;min-height:1.35em}
 .dicx span{color:var(--muted)}
 /* (4) 겹치기 */
 .mpick{display:flex;flex-wrap:wrap;gap:4px 1.1em;margin-bottom:clamp(24px,4vh,40px)}
@@ -490,8 +488,8 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
   .hs{display:block;margin-top:88px} .hs>.sl{display:block;margin-bottom:10px}
   .pk{grid-template-columns:44px 1fr auto} .pk li{grid-template-columns:subgrid} .pk img{grid-column:1} .pk .nm{grid-column:2} .pk .ty{display:none} .pk .br{grid-column:1/-1;margin-top:6px}
   .cnt{grid-template-columns:1fr 1fr;row-gap:24px}
-  .dic,.dic .dr{display:block} .dic .dr{margin-top:18px} .dic .dr>.rh{margin-bottom:8px} .dic .dr>.rh b{display:inline;margin-right:.5em}
-  .dic .dr>.tl{gap:6px} .dic .hd>.tl span{font-size:11px} .dicx{margin-top:16px}
+  .dic{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:6px} .dic .th{display:none} .dic .rh{grid-column:1/-1;padding:18px 0 0}
+  .dic .cell{padding:6px 0} .dic .cell::before{content:attr(data-t);display:block;width:100%;color:var(--muted)}
   .cmb{grid-template-columns:1fr} .cmb .parts,.cmb .eq,.cmb .out{grid-column:1/-1} .cmb .parts{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px} .cmb .pt p span{display:none} .cmb .eq{padding:16px 0}
 }
 @media (prefers-reduced-motion: reduce){ .ui,#veil,.intro{transition:none;scroll-behavior:auto} .cmb .pt,.cmb .out img,.pk .br s b{transition:none} }
@@ -708,9 +706,8 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
     <div class="hs" id="hs3b"><span class="sl">(4) 획 사전</span><div class="sc">
       <h3>획의 수와 모양이 만나<br>하나의 획이 됩니다</h3>
       <p class="tx">갈래(획의 수)와 맛(획의 모양)이 만나는 자리마다 쓰는 획이 정해져 있습니다. 자리마다 대표 획 하나씩을 모았습니다.</p>
-    </div>
-    <div class="dic" id="hDic"></div>
-    <p class="dicx" id="hDicX">획에 마우스를 올리면 어떤 미생물인지 보입니다.</p></div>
+      <div class="vis"><div class="dic" id="hDic"></div><p class="dicx" id="hDicX">획에 마우스를 올리면 어떤 미생물인지 보입니다.</p></div>
+    </div></div>
 
     <div class="hs" id="hs4"><span class="sl">(5) 겹치기</span><div class="sc">
       <h3>네 획을 겹쳐<br>하나의 문양으로</h3>
@@ -2155,10 +2152,9 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
 
   // (3) 획 사전: 갈래(줄) × 맛(칸)
   const dic = $('hDic'), dicx = $('hDicX'), dicx0 = dicx.innerHTML;
-  dic.innerHTML = `<div class="dr hd"><span class="rh"></span><div class="tl">${T6.map(t => `<span>${t}</span>`).join('')}</div></div>` +
-    ROW.map((r, ri) => `<div class="dr"><span class="rh"><b>${r}</b>${CNT[ri]}</span><div class="tl">${T6.map((t, ti) => {
-      const k = Object.keys(HS).find(k => HS[k][1] === ri && HS[k][2] === ti);
-      return `<div class="c">${k ? `<button type="button" class="g" data-k="${k}" aria-label="${r} · ${t} · ${HS[k][0]}"><img src="${gl(k)}" alt=""></button>` : ''}</div>`; }).join('')}</div></div>`).join('');
+  dic.innerHTML = `<span class="th"></span>${T6.map(t => `<span class="th">${t}</span>`).join('')}` +
+    ROW.map((r, ri) => `<span class="rh">${r}<br><span style="color:#c4c1bb">${CNT[ri]}</span></span>` + T6.map((t, ti) =>
+      `<div class="cell" data-t="${t}">${Object.keys(HS).filter(k => HS[k][1] === ri && HS[k][2] === ti).slice(0, 1).map(k => `<button type="button" class="g" data-k="${k}" aria-label="${HS[k][0]}"><img src="${gl(k)}" alt=""></button>`).join('')}</div>`).join('')).join('');
   const showG = k => { dicx.innerHTML = k ? `<i>${HS[k][0]}</i> <span>· ${ROW[HS[k][1]]} ${CNT[HS[k][1]]} · ${T6[HS[k][2]]}</span>` : dicx0; dic.querySelectorAll('.g').forEach(g => g.classList.toggle('on', g.dataset.k === k)); };
   dic.querySelectorAll('.g').forEach(g => { g.onmouseenter = g.onfocus = () => showG(g.dataset.k); g.onclick = () => showG(g.dataset.k); });
   dic.onmouseleave = () => showG(null);
@@ -2169,9 +2165,9 @@ addEventListener('keydown', e => { if (!shop.hidden && e.key === 'Escape'){ e.st
   function showM(i){
     if (i === cur) return; cur = i; const m = HM[i];
     cmb.classList.remove('on');
-    cmb.innerHTML = `<div class="parts">${m[2].map((k, j) => `<div class="pt" style="transition-delay:${j * .14}s"><div class="sq"><img src="${gl(k)}" alt=""><p><i>${sh(HS[k][0])}</i><span>${ROW[HS[k][1]]} · ${T6[HS[k][2]]}</span></p></div></div>`).join('')}</div>
+    cmb.innerHTML = `<div class="parts">${m[2].map((k, j) => `<div class="pt" style="transition-delay:${j * .14}s"><div class="sq"><img src="${gl(k)}" alt="${HS[k][0]}"></div></div>`).join('')}</div>
       <div class="eq" aria-hidden="true"></div>
-      <figure class="out"><div class="sq"><img src="gain/g_${m[0]}.png" alt="家印 ${pad(i + 1)}" style="transition-delay:.7s"><figcaption><span>家印 ${pad(i + 1)}</span><span>${CATS[m[1]].name}</span></figcaption></div></figure>`;
+      <figure class="out"><div class="sq"><img src="gain/g_${m[0]}.png" alt="家印 ${pad(i + 1)}" style="transition-delay:.7s"></div></figure>`;
     requestAnimationFrame(() => requestAnimationFrame(() => cmb.classList.add('on')));
   }
 
