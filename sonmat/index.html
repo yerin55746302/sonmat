@@ -1,7 +1,4 @@
-<!doctype html>
-<html lang="ko">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>손맛</title>
 <link rel="preload" href="fonts/Pretendard-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
@@ -1401,7 +1398,7 @@ const BOOK_SPINE = new THREE.BoxGeometry(1, 1, .035);                  // 책등
 const paperMat = new THREE.MeshStandardMaterial({map:paperTex, roughness:.95, emissive:new THREE.Color(.16, .155, .145)});   // 그늘에서도 종이가 하얗게
 // 책 표지·책등: 접수실 카드와 같은 리넨 종이 질감 (색 지도 + 노멀)
 const linenTex = (f, srgb) => { const t = TL.load(`tex/linen_${f}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); if (srgb) SRGB(t); return t; };
-const LINEN_A = linenTex('albedo', true), LINEN = { normalMap:linenTex('normal'), normalScale:new THREE.Vector2(.45, .45) };
+const LINEN_A = linenTex('albedo', true), LINEN = LITE ? {} : { normalMap:linenTex('normal'), normalScale:new THREE.Vector2(.45, .45) };   // 태블릿: 천 요철 생략
 // 낡은 책: 모서리 닳음 · 손때 · 햇볕에 바랜 윗부분 · 긁힘 · 얼룩 (책마다 다르게)
 function ageOn(g, w, h, seed){
   let s1 = (seed || 1) * 9301 % 233280; const r = () => (s1 = (s1 * 9301 + 49297) % 233280) / 233280;
@@ -1454,7 +1451,7 @@ const coverCache = {};
 function coverMat(b){
   const key = b.color + '|' + b.art + '|' + (b.no % 4);
   if (coverCache[key]) return coverCache[key];
-  const c = mk(320, 560, (g, w, h) => {
+  const c = mk(LITE ? 160 : 320, LITE ? 280 : 560, (g, w, h) => {
     g.fillStyle = b.color; g.fillRect(0, 0, w, h);
     drawContain(g, inkArt(ARTS[b.art-1], b.inv), w*.08, h*.06, w*.84, h*.56, true);
     g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, 5, h);
@@ -1465,7 +1462,7 @@ function coverMat(b){
 }
 function spineMat(b, wWorld, hWorld){
   if (!b.mark) return colorMat(b.color);   // 책등에는 문양만
-  const H = 512, W = Math.max(12, Math.min(140, Math.round(H * wWorld / hWorld)));
+  const H = LITE ? 256 : 512, W = Math.max(8, Math.min(LITE ? 70 : 140, Math.round(H * wWorld / hWorld)));
   const c = mk(W, H, g => {
     g.fillStyle = b.color; g.fillRect(0, 0, W, H);
     const z = W*.8; drawContain(g, inkArt(ARTS[b.art-1], b.inv), (W - z)/2, H*.05, z, z, true);
@@ -1636,18 +1633,24 @@ function buildDetail(ci){
     const cm = colorMat(b.color);
     const m = new THREE.Mesh(BOOK_PAGES, paperMat);
     const part = (geo, mat, x, z) => { const p = new THREE.Mesh(geo, mat); p.position.set(x, 0, z); m.add(p); };
-    part(BOOK_BOARD, cm, .465, 0);                                          // 뒤표지
+    if (!LITE) part(BOOK_BOARD, cm, .465, 0);                               // 뒤표지 (태블릿에서는 생략: 그리는 횟수 줄임)
     part(BOOK_BOARD, [cm, coverMat(b), cm, cm, cm, cm], -.465, 0);          // 앞표지 (문양)
     part(BOOK_SPINE, [cm, cm, cm, cm, spineMat(b, it.bw, it.bh), cm], 0, .4825);   // 책등
     m.position.set(it.cx, sh.y0 + it.bh/2, it.cz); m.scale.set(it.bw, it.bh, it.dep);
-    grp.add(m); C.books.push({ m, it, si, bi, t:0 });
+    grp.add(m); C.books.push({ m, it, si, bi, t:0, idx:C.books.length });
   }));
+  if (LITE){
+    // 태블릿: 가만히 꽂혀 있는 책은 한 번에 그리고(인스턴스), 손이 닿은 책만 따로 그림
+    const di = new THREE.InstancedMesh(boxGeo, C.inst.material, C.books.length);
+    C.books.forEach((bk, i) => { di.setColorAt(i, lin(bk.it.b.color)); bk.m.visible = false; });
+    di.instanceColor.needsUpdate = true; di.frustumCulled = false; grp.add(di); C.dinst = di;
+  }
   C.g.add(grp); C.detail = grp; C.inst.visible = false;
 }
 function dropDetail(ci){
   const C = cases[ci]; if (!C.detail || ci === cur) return;
   C.detail.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { if (m.userData.own){ m.map.dispose(); m.dispose(); } }); });
-  C.g.remove(C.detail); C.detail = null; C.books = null; C.inst.visible = true;
+  C.g.remove(C.detail); C.detail = null; C.books = null; C.dinst = null; C.inst.visible = true;
 }
 
 let heldRot = {x:0, y:0}, heldRotT = {x:0, y:0};
@@ -1822,9 +1825,17 @@ function layoutBooks(C, k){
       const kp = bk === held || bk.m.userData.away ? k(.12) : k(.35);
       bk.m.position.lerp(tgtP, kp); bk.m.quaternion.slerp(tgtQ, kp); bk.m.scale.lerp(tgtS, kp);
       bk.m.userData.away = bk === held || bk.m.position.distanceToSquared(tgtP) > .0004;
+      if (C.dinst){
+        const rest = bk !== held && bk.t < .02 && !bk.m.userData.away;
+        bk.m.visible = !rest;
+        if (rest) tmpM.compose(bk.m.position, bk.m.quaternion, bk.m.scale); else tmpM.makeScale(0, 0, 0);
+        C.dinst.setMatrixAt(bk.idx, tmpM);
+      }
     });
   });
+  if (C.dinst) C.dinst.instanceMatrix.needsUpdate = true;
 }
+const tmpM = new THREE.Matrix4();
 let last = performance.now(), fpsN = 0, fpsT = 0, curPR = PR;
 (function loop(now){
   requestAnimationFrame(loop);
