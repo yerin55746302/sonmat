@@ -4,17 +4,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="light only">
 <title>손맛 균주 기록</title>
 <style>
 @font-face{font-family:"Pretendard";src:url(fonts/Pretendard-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
 :root{
-  --ink:#0b0b0b; --muted:#6b6863; --faint:#cfcdc9; --soft:#e8e6e2; --panel:#dedcd7; --accent:#E55F22; --bg:#fff;
+  --ink:#0b0b0b; --muted:#6b6863; --faint:#cfcdc9; --soft:#efeeec; --panel:#e7e6e3; --accent:#E55F22; --bg:#fff;
   --xl:clamp(52px,15vw,62px);   /* hero / big numerals */
   --l:clamp(29px,8.4vw,34px);   /* section titles */
   --m:16px;                      /* lead text */
   --s:13px;                      /* captions, labels (모바일 최소 12px 이상) */
   --pad:16px;
-  color-scheme:light;
+  color-scheme:only light;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:40px}
@@ -37,7 +39,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .r{text-align:right}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px var(--pad);background:rgba(232,230,226,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background .3s,color .3s}
+.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px var(--pad);background:rgba(239,238,236,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background .3s,color .3s}
 .top .logo{height:11px;width:auto;transition:filter .3s}
 .top.dark .logo{filter:invert(1)}
 .top.dark{background:rgba(11,11,11,.82);color:#fff}
@@ -62,8 +64,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .feat b{display:block;font-weight:500;color:var(--ink)}
 
 /* spec table (hairlines only for data rows) */
-.spec{list-style:none;border-top:1px solid #d4d2cd}
-.spec li{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;padding:12px 0 13px;border-bottom:1px solid #d4d2cd;font-size:var(--m);line-height:1.32;letter-spacing:-.02em}   /* 표도 본문과 같은 크기 */
+.spec{list-style:none;border-top:1px solid #dddcd9}
+.spec li{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;padding:12px 0 13px;border-bottom:1px solid #dddcd9;font-size:var(--m);line-height:1.32;letter-spacing:-.02em}   /* 표도 본문과 같은 크기 */
 .spec li>:last-child{text-align:right;color:var(--muted)}
 .spec li.now>:first-child,.spec li.now>:last-child{color:var(--accent)}
 .spec li.todo>:first-child{color:var(--muted)}
@@ -155,8 +157,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 .tip.inv{background:#fff;color:var(--ink)}
 .tip.on{opacity:1;transform:none}
 /* glossary */
-details{border-bottom:1px solid #d4d2cd}
-details:first-child{border-top:1px solid #d4d2cd}
+details{border-bottom:1px solid #dddcd9}
+details:first-child{border-top:1px solid #dddcd9}
 summary{list-style:none;display:flex;justify-content:space-between;padding:11px 0 12px;cursor:pointer}
 summary::-webkit-details-marker{display:none}
 summary .pm{color:var(--muted);transition:transform .3s}
