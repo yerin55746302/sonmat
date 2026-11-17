@@ -187,6 +187,8 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 .help .ok:hover i{transform:translateX(6px)}
 .help .ok:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 @media (max-width:560px){ .help ul{grid-template-columns:1fr;gap:18px} }
+.lite .help{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.92)}   /* 태블릿: 3D 위 흐림 효과 끔 */
+.lite .help::before{display:none}
 .back{all:unset;position:fixed;z-index:3;left:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;transition:opacity .6s ease}
 .back:hover{opacity:.55}
 .back:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
@@ -729,6 +731,13 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 <div id="veil"></div>
 
 <script>
+/* 태블릿·휴대폰·메모리가 적은 기기: 3D를 가볍게 (유리 투과·큰 그림자·고해상도 끔) */
+const LITE = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPad|iPhone|Mobile/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4 || /[?&]lite\b/.test(location.search);
+const PR = LITE ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 2);
+const ANISO = LITE ? 2 : 8;
+if (LITE) document.documentElement.classList.add('lite');
+/* HDR 하늘을 반정밀도로: 모바일 GPU는 32비트 실수 텍스처를 부드럽게 거르지 못해 서고가 검게 멈추는 일이 있음 */
+const toHalfTex = (f, W, H) => { const h = new Uint16Array(f.length); for (let i = 0; i < f.length; i++) h[i] = THREE.DataUtils.toHalfFloat(Math.min(f[i], 65000)); return new THREE.DataTexture(h, W, H, THREE.RGBAFormat, THREE.HalfFloatType); };
 /* ════════════════ 공통 데이터: 다섯 갈래 × 네 칸, 책 한 권 = 한 집의 기록 ════════════════ */
 const CATS = [
   {name:"김치",   en:"Kimchi",    c:"#E55F22", subs:["배추김치","깍두기","동치미","갓김치"]},
@@ -887,7 +896,7 @@ document.body.dataset.view = view; markNav();
 const stage = $('stage'), caption = $('caption'), rhint = $('rhint'), cats = $('cats');
 const items = [];            // 접수실 카드 = {b, mesh} (3D) 또는 {b, el} (WebGL이 안 될 때)
 let R3 = null;
-try { const rr = new THREE.WebGLRenderer({canvas:$('rgl'), antialias:true, alpha:true}); if (rr.getContext()) R3 = { r:rr }; } catch(e){}
+try { const rr = new THREE.WebGLRenderer({canvas:$('rgl'), antialias:!LITE, alpha:true, powerPreference:'high-performance'}); if (rr.getContext()) R3 = { r:rr }; } catch(e){}
 if (!R3) $('rgl').remove();
 function makeCard(b){ return R3 ? makeCard3(b) : makeCardDOM(b); }
 function makeCardDOM(b){
@@ -909,15 +918,15 @@ let makeCard3 = () => null, frame3 = () => {}, pick3 = () => null;
 if (R3){
   const T = THREE, rr = R3.r, sc = new T.Scene();
   const L = h => new T.Color(h).convertSRGBToLinear();
-  rr.setPixelRatio(Math.min(devicePixelRatio, 2));
+  rr.setPixelRatio(PR);
   rr.outputEncoding = T.sRGBEncoding; rr.toneMapping = T.ACESFilmicToneMapping; rr.toneMappingExposure = .82;
-  rr.shadowMap.enabled = true; rr.shadowMap.type = T.PCFSoftShadowMap;
+  rr.shadowMap.enabled = true; rr.shadowMap.type = LITE ? T.PCFShadowMap : T.PCFSoftShadowMap;
   const cam = new T.PerspectiveCamera(24, 1, .1, 100);
   cam.position.set(.2, 2.3, 6.4); cam.lookAt(.2, .42, 0);
   // 빛: 서고와 같은 값
   sc.add(new T.HemisphereLight(L(0xfffaf2), L(0xc9bfb1), .26));
   const sun = new T.DirectionalLight(L(0xfff1df), 1.55); sun.position.set(9, 7.5, 7); sun.target.position.set(0, 0, -4); sc.add(sun, sun.target);
-  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .02;
+  sun.castShadow = true; sun.shadow.mapSize.set(LITE ? 1024 : 2048, LITE ? 1024 : 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .02;
   Object.assign(sun.shadow.camera, {left:-7, right:7, top:7, bottom:-7, near:1, far:40}); sun.shadow.camera.updateProjectionMatrix();
   const fill = new T.DirectionalLight(L(0xfff6ec), .85); fill.position.set(-10, 2.2, 1); fill.target.position.set(0, 2.2, 1); sc.add(fill, fill.target);
   // 카드가 서 있는 바닥: 그림자만 받음 (바탕은 접수실 그대로 비침)
@@ -936,7 +945,7 @@ if (R3){
         const i = (y*W + x)*4, o = ((H - 1 - y)*W + x)*4, e = px[i+3], k = e ? Math.pow(2, e - 136) : 0;
         f[o] = px[i]*k; f[o+1] = px[i+1]*k; f[o+2] = px[i+2]*k; f[o+3] = 1;
       }
-      const tex = new T.DataTexture(f, W, H, T.RGBAFormat, T.FloatType);
+      const tex = toHalfTex(f, W, H);
       tex.mapping = T.EquirectangularReflectionMapping; tex.magFilter = tex.minFilter = T.LinearFilter; tex.needsUpdate = true;
       sc.environment = pm.fromEquirectangular(tex).texture;
     }).catch(() => {});
@@ -967,7 +976,7 @@ if (R3){
   function setRes(it, w){
     if (it.res === w) return; it.res = w;
     const c = document.createElement('canvas'); paint(c, it.b, w);
-    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = rr.capabilities.getMaxAnisotropy();
+    const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = Math.min(ANISO, rr.capabilities.getMaxAnisotropy());
     if (it.front.map) it.front.map.dispose(); it.front.map = t; it.front.needsUpdate = true; it.cv = c;
   }
   const repaint = () => items.forEach(it => { if (it.cv){ paint(it.cv, it.b, it.res); it.front.map.needsUpdate = true; } });
@@ -1232,7 +1241,7 @@ function onArchiveShown(){
 }
 
 let renderer;
-try { renderer = new THREE.WebGLRenderer({canvas, antialias:true}); } catch(e){}
+try { renderer = new THREE.WebGLRenderer({canvas, antialias:!LITE, powerPreference:'high-performance'}); } catch(e){}
 const glOK = !!(window.THREE && renderer && renderer.getContext());
 let mode = 'roam', cur = -1, pendingHold = null, held = null, hover = null;
 let enterCase = () => {}, resize = () => {}, holdBook = () => {}, tryPending = () => {};
@@ -1242,10 +1251,18 @@ if (!glOK){
   n.textContent = '이 브라우저에서는 3D 서고를 그릴 수 없습니다. 크롬이나 사파리 최신판으로 열어 주십시오.';
   document.body.appendChild(n);
 } else {
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(PR);
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  if (document.querySelector('.nogl.lost')) return;
+  const n = document.createElement('div'); n.className = 'nogl arch lost';
+  n.innerHTML = '기기의 그래픽 메모리가 부족해 서고를 잠시 그리지 못했습니다.<br><button type="button" style="all:unset;cursor:pointer;margin-top:14px;text-decoration:underline">다시 불러오기</button>';
+  n.querySelector('button').onclick = () => location.reload();
+  document.body.appendChild(n);
+});
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .82;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 const SRGB = t => { t.encoding = THREE.sRGBEncoding; return t; };
@@ -1292,7 +1309,7 @@ function texFrom(size, H, colorAt, strength){
     g.putImageData(im, 0, 0);
   });
   const map = SRGB(new THREE.CanvasTexture(col)), nmap = new THREE.CanvasTexture(nor);
-  [map, nmap].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; });
+  [map, nmap].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = ANISO; });
   return { map, nmap };
 }
 const clamp255 = v => Math.max(0, Math.min(255, v));
@@ -1301,7 +1318,7 @@ const clamp255 = v => Math.max(0, Math.min(255, v));
 const TL = new THREE.TextureLoader();
 function pbr(name, rx, ry, opt = {}){
   const alb = opt.gray ? name + 'g' : name;
-  const set = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 8; return t; };
+  const set = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = ANISO; return t; };
   const o = { map:SRGB(set(TL.load(`tex/${alb}_albedo.jpg`))), roughnessMap:set(TL.load(`tex/${name}_rough.jpg`)), roughness:opt.r || 1 };
   if (opt.bump){ o.bumpMap = set(TL.load(`tex/${name}_normal.jpg`)); o.bumpScale = opt.bump; }
   else { o.normalMap = set(TL.load(`tex/${name}_normal.jpg`)); o.normalScale = new THREE.Vector2(opt.ns || .7, opt.ns || .7); }
@@ -1312,7 +1329,7 @@ scene.add(new THREE.HemisphereLight(lin(0xfffaf2), lin(0xc9bfb1), .26));
 const sunL = new THREE.DirectionalLight(lin(0xfff1df), 1.55);
 sunL.position.set(9, 7.5, 7); sunL.target.position.set(0, 0, -4); scene.add(sunL, sunL.target);
 const fillL = new THREE.DirectionalLight(lin(0xfff6ec), .85); fillL.position.set(-10, 2.2, 1); fillL.target.position.set(0, 2.2, 1); scene.add(fillL, fillL.target);   // 그림자 없는 반대편 채움광
-sunL.castShadow = true; sunL.shadow.mapSize.set(2048, 2048); sunL.shadow.bias = -.0004; sunL.shadow.normalBias = .02;
+sunL.castShadow = true; sunL.shadow.mapSize.set(LITE ? 1024 : 2048, LITE ? 1024 : 2048); sunL.shadow.bias = -.0004; sunL.shadow.normalBias = .02;
 Object.assign(sunL.shadow.camera, { left:-16, right:16, top:16, bottom:-16, near:1, far:40 }); sunL.shadow.camera.updateProjectionMatrix();
 // 반사용 환경: 흰 방과 밝은 천창
 {
@@ -1333,7 +1350,7 @@ Object.assign(sunL.shadow.camera, { left:-16, right:16, top:16, bottom:-16, near
       const k = e ? Math.pow(2, e - 136) : 0;
       f[o] = px[i]*k; f[o+1] = px[i+1]*k; f[o+2] = px[i+2]*k; f[o+3] = 1;
     }
-    const tex = new THREE.DataTexture(f, W, H, THREE.RGBAFormat, THREE.FloatType);
+    const tex = toHalfTex(f, W, H);
     tex.mapping = THREE.EquirectangularReflectionMapping; tex.magFilter = tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true;
     const envTex = pm.fromEquirectangular(tex).texture;
     scene.environment = envTex; scene.background = tex; scene.backgroundIntensity = .9;
@@ -1469,13 +1486,13 @@ const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 /* 반투명 유리: 뒤에 있는 책 색이 흐릿하게 번져 비침 (transmission + 거칠기 = 젖빛 유리) */
 const panelTex = (f, r) => { const t = TL.load(`tex/glass2_${f}.jpg`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(r, r); return t; };
 // 선반 유리: 투명도를 줄여 우윳빛 젖빛 유리로 (책 색은 은은하게만 비침)
-const GLASS = new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.72, roughness:.55, thickness:.06, ior:1.5, metalness:0,
+const GLASS = LITE ? new THREE.MeshStandardMaterial({color:lin(0xf3f1ec), roughness:.5, metalness:0, transparent:true, opacity:.5, envMapIntensity:1}) : new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.72, roughness:.55, thickness:.06, ior:1.5, metalness:0,
   roughnessMap:panelTex('rough', 1.5), normalMap:panelTex('normal', 1.5), normalScale:new THREE.Vector2(.35, .35), clearcoat:.4, clearcoatRoughness:.2, envMapIntensity:1});
-const FROST = new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.6, roughness:.7, thickness:.06, ior:1.5, metalness:0,
+const FROST = LITE ? new THREE.MeshStandardMaterial({color:lin(0xf3f1ec), roughness:.7, metalness:0, transparent:true, opacity:.6, envMapIntensity:.8}) : new THREE.MeshPhysicalMaterial({color:lin(0xf3f1ec), transmission:.6, roughness:.7, thickness:.06, ior:1.5, metalness:0,
   roughnessMap:panelTex('rough', 2), normalMap:panelTex('normal', 2), normalScale:new THREE.Vector2(.3, .3), envMapIntensity:.8});
 // 칸막이·선반: 같은 유리 질감을 쓰되 거의 불투명한 흰 판 (모서리로만 빛이 살짝 비침)
 // 옆판·선반: 반투명 젖빛 유리 판 (뒤의 빛과 책 색이 번져 비침)
-const PANEL = new THREE.MeshPhysicalMaterial({color:0xffffff, transmission:.94, roughness:.42, thickness:.03, ior:1.5, metalness:0,
+const PANEL = LITE ? new THREE.MeshStandardMaterial({color:0xffffff, roughness:.42, metalness:0, transparent:true, opacity:.32, depthWrite:false, envMapIntensity:1.1}) : new THREE.MeshPhysicalMaterial({color:0xffffff, transmission:.94, roughness:.42, thickness:.03, ior:1.5, metalness:0,
   roughnessMap:panelTex('rough', 1), normalMap:panelTex('normal', 1), normalScale:new THREE.Vector2(.3, .3), clearcoat:.5, clearcoatRoughness:.25, envMapIntensity:1.1});
 // 뒤판: 안쪽에서 빛을 내는 젖빛 패널 (가운데가 가장 밝게)
 const BACKLIT = new THREE.MeshStandardMaterial({color:lin(0xf4f2ee), roughness:.9, emissive:lin(0xfff6ea), emissiveIntensity:3.4,
