@@ -56,7 +56,7 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 
 /* ═══ ① 소개 ═══ */
 .intro{position:fixed;inset:0;z-index:40;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:#fff;scroll-behavior:smooth}
-.hero{position:relative;height:100vh;min-height:600px;background:var(--gray);color:#fff;overflow:hidden}
+.hero{position:relative;height:calc(100vh - var(--t-xl)*.5);min-height:560px;background:var(--gray);color:#fff;overflow:hidden}
 .giant{position:absolute;right:-12vw;top:54%;height:118vh;width:auto;max-width:none!important;transform:translateY(-50%);pointer-events:none;user-select:none;opacity:.94}
 /* 맨 위 가로선: 불러오는 만큼 흰 선이 차오름 */
 .rule{position:absolute;left:16px;right:16px;top:calc(62px + env(safe-area-inset-top,0px));height:1.5px;background:rgba(255,255,255,.28)}
