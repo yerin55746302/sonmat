@@ -189,6 +189,7 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 @media (max-width:560px){ .help ul{grid-template-columns:1fr;gap:18px} }
 .lite .help{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.92)}   /* 태블릿: 3D 위 흐림 효과 끔 */
 .lite .help::before{display:none}
+.lite .logo,.lite .nav{mix-blend-mode:normal;color:var(--ink)}   /* 태블릿: 3D 위 색 반전 합성 끔 (매 프레임 합성 부담) */
 .back{all:unset;position:fixed;z-index:3;left:18px;bottom:calc(16px + env(safe-area-inset-bottom,0px));cursor:pointer;font-size:var(--t-s);line-height:1.35;font-weight:500;letter-spacing:-.02em;transition:opacity .6s ease}
 .back:hover{opacity:.55}
 .back:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
@@ -733,7 +734,7 @@ body[data-view="archive"] .rec,body[data-view="archive"] .intro{display:none!imp
 <script>
 /* 태블릿·휴대폰·메모리가 적은 기기: 3D를 가볍게 (유리 투과·큰 그림자·고해상도 끔) */
 const LITE = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPad|iPhone|Mobile/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4 || /[?&]lite\b/.test(location.search);
-const PR = LITE ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 2);
+const PR = LITE ? 1 : Math.min(devicePixelRatio, 2);
 const ANISO = LITE ? 2 : 8;
 if (LITE) document.documentElement.classList.add('lite');
 /* HDR 하늘을 반정밀도로: 모바일 GPU는 32비트 실수 텍스처를 부드럽게 거르지 못해 서고가 검게 멈추는 일이 있음 */
@@ -920,7 +921,7 @@ if (R3){
   const L = h => new T.Color(h).convertSRGBToLinear();
   rr.setPixelRatio(PR);
   rr.outputEncoding = T.sRGBEncoding; rr.toneMapping = T.ACESFilmicToneMapping; rr.toneMappingExposure = .82;
-  rr.shadowMap.enabled = true; rr.shadowMap.type = LITE ? T.PCFShadowMap : T.PCFSoftShadowMap;
+  rr.shadowMap.enabled = !LITE; rr.shadowMap.type = T.PCFSoftShadowMap;
   const cam = new T.PerspectiveCamera(24, 1, .1, 100);
   cam.position.set(.2, 2.3, 6.4); cam.lookAt(.2, .42, 0);
   // 빛: 서고와 같은 값
@@ -1262,7 +1263,7 @@ canvas.addEventListener('webglcontextlost', e => {
 });
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .82;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = !LITE; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 const SRGB = t => { t.encoding = THREE.sRGBEncoding; return t; };
@@ -1319,7 +1320,9 @@ const TL = new THREE.TextureLoader();
 function pbr(name, rx, ry, opt = {}){
   const alb = opt.gray ? name + 'g' : name;
   const set = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = ANISO; return t; };
-  const o = { map:SRGB(set(TL.load(`tex/${alb}_albedo.jpg`))), roughnessMap:set(TL.load(`tex/${name}_rough.jpg`)), roughness:opt.r || 1 };
+  const o = { map:SRGB(set(TL.load(`tex/${alb}_albedo.jpg`))), roughness:opt.r || 1 };
+  if (LITE) return o;
+  o.roughnessMap = set(TL.load(`tex/${name}_rough.jpg`));
   if (opt.bump){ o.bumpMap = set(TL.load(`tex/${name}_normal.jpg`)); o.bumpScale = opt.bump; }
   else { o.normalMap = set(TL.load(`tex/${name}_normal.jpg`)); o.normalScale = new THREE.Vector2(opt.ns || .7, opt.ns || .7); }
   return o;
@@ -1562,7 +1565,7 @@ const cases = CATS.map((cat, ci) => {
   add(new THREE.BoxGeometry(.62, .9, .62), new THREE.MeshStandardMaterial({...pbr('wall2', .5, .7, {ns:.5, gray:1}), color:STONE_GRAY}), 2.25, .45, .75);
   // 백자 달항아리: 위아래를 따로 빚어 붙인 듯 살짝 어긋난 둥근 몸
   const pts = [[0,0],[.11,0],[.12,.012],[.15,.05],[.22,.12],[.268,.21],[.272,.25],[.262,.3],[.225,.38],[.17,.45],[.13,.49],[.122,.515],[.135,.525],[.128,.535],[0,.535]].map(([r, y]) => new THREE.Vector2(r, y));
-  const jarM = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), new THREE.MeshPhysicalMaterial({color:lin(0xf2eee5), roughness:.22, clearcoat:.7, clearcoatRoughness:.12, envMapIntensity:1.1}));
+  const jarM = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), (LITE ? new THREE.MeshStandardMaterial({color:lin(0xf2eee5), roughness:.25, envMapIntensity:1.1}) : new THREE.MeshPhysicalMaterial({color:lin(0xf2eee5), roughness:.22, clearcoat:.7, clearcoatRoughness:.12, envMapIntensity:1.1})));
   jarM.scale.set(1, 1, .97); jarM.position.set(2.25, .9, .75); jarM.castShadow = true; g.add(jarM);
   const P0 = PLACES[ci];
   g.position.set(...P0.pos); g.rotation.y = P0.ry; scene.add(g);
@@ -1822,7 +1825,7 @@ function layoutBooks(C, k){
     });
   });
 }
-let last = performance.now();
+let last = performance.now(), fpsN = 0, fpsT = 0, curPR = PR;
 (function loop(now){
   requestAnimationFrame(loop);
   now = now || performance.now();
@@ -1843,7 +1846,7 @@ let last = performance.now();
     state.pitch += (goal.pitch - state.pitch)*k(.09);
   }
   camera.position.copy(state.pos);
-  if (mode === 'roam') camera.position.y += Math.sin(now/900)*.006;
+  if (mode === 'roam' && !LITE) camera.position.y += Math.sin(now/900)*.006;
   camera.rotation.set(state.pitch, state.yaw, 0);
   camera.updateMatrixWorld();
   if (ring.visible) ring.material.opacity = .5 + Math.sin(now/260)*.2;
@@ -1853,6 +1856,10 @@ let last = performance.now();
     C.plate.material.opacity += (o - C.plate.material.opacity) * k(.08);
   });
   renderer.render(scene, camera);
+  // 프레임이 느리면 그리는 해상도를 단계적으로 낮춤 (반응 속도 우선)
+  fpsN++; fpsT += dt;
+  if (fpsN >= 45){ const avg = fpsT/fpsN; fpsN = 0; fpsT = 0;
+    if (avg > 1/30 && curPR > .55){ curPR = Math.max(.55, curPR - .15); renderer.setPixelRatio(curPR); resize(); } }
 })();
 if (document.fonts) document.fonts.load('700 116px "Noto Sans KR"').then(() => cases.forEach(C => C.plate.userData.redraw())).catch(() => {});
 }
